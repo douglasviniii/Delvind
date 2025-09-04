@@ -144,6 +144,7 @@ export const useAuth = () => useContext(AuthContext);
 export const ProtectedRoute = ({ children, adminOnly = false, collaboratorOnly = false }: { children: React.ReactNode, adminOnly?: boolean, collaboratorOnly?: boolean }) => {
     const { user, loading, isAdmin, isCollaborator, rolesChecked } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
@@ -156,8 +157,11 @@ export const ProtectedRoute = ({ children, adminOnly = false, collaboratorOnly =
       
       let hasAccess = false;
       let redirectPath: string | null = null;
-
-      if (adminOnly) {
+      
+      // Special case: allow collaborators to access the admin chat page
+      if (pathname.startsWith('/admin/chat') && (isAdmin || isCollaborator)) {
+          hasAccess = true;
+      } else if (adminOnly) {
           if (isAdmin) hasAccess = true;
           else redirectPath = isCollaborator ? '/collaborator' : '/dashboard';
       } else if (collaboratorOnly) {
@@ -174,7 +178,7 @@ export const ProtectedRoute = ({ children, adminOnly = false, collaboratorOnly =
         router.push(redirectPath);
       }
 
-    }, [user, loading, rolesChecked, adminOnly, collaboratorOnly, isAdmin, isCollaborator]);
+    }, [user, loading, rolesChecked, adminOnly, collaboratorOnly, isAdmin, isCollaborator, pathname, router]);
   
     if (isAuthorized) {
         return <>{children}</>;
@@ -204,7 +208,7 @@ export const UnprotectedRoute = ({ children }: { children: React.ReactNode }) =>
                 router.push('/dashboard');
             }
         }
-    }, [user, loading, rolesChecked, isAdmin, isCollaborator, isClient]);
+    }, [user, loading, rolesChecked, isAdmin, isCollaborator, isClient, router]);
   
     if (!isClient || user || loading) {
         return <AuthProviderSkeleton />;
