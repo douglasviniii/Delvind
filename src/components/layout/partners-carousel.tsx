@@ -67,7 +67,7 @@ export function PartnersCarousel() {
                                         alt={partner.name}
                                         width={600}
                                         height={400}
-                                        className="w-full h-48 object-contain transition-transform duration-300 group-hover:scale-105 p-4 bg-muted"
+                                        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
                                     />
                                   </div>
                                   <CardHeader className='items-center'>
