@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import { Logo } from "../../components/layout/logo";
 import { cn } from "../../lib/utils";
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const navItems = [
@@ -30,7 +31,7 @@ const navItems = [
 ];
 
 function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) {
-    const { user } = useAuth();
+    const { user, sectors, selectedSector, setSelectedSector } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const { toast } = useToast();
@@ -101,6 +102,8 @@ function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) 
     };
     
     const userInitial = user?.displayName?.[0] || user?.email?.[0] || 'C';
+    const isChatPage = pathname === '/admin/chat' || pathname === '/collaborator/chat';
+
 
     const SidebarNav = ({ isSheet = false }: { isSheet?: boolean }) => {
         const NavLink = ({ item, children }: { item: any; children?: React.ReactNode }) => {
@@ -110,7 +113,8 @@ function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) 
                     className={cn(
                         "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
                         pathname.startsWith(item.href) && item.href !== "/collaborator" && "bg-muted text-primary",
-                        pathname === "/collaborator" && item.href === "/collaborator" && "bg-muted text-primary"
+                        pathname === "/collaborator" && item.href === "/collaborator" && "bg-muted text-primary",
+                        item.label === 'Chat' && pathname.startsWith('/admin/chat') && "bg-muted text-primary" // Special case for chat
                     )}
                 >
                      {children || (
@@ -201,7 +205,22 @@ function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) 
                         </SheetContent>
                     </Sheet>
                     <div className="w-full flex-1">
-                         <h1 className="text-lg font-semibold md:block hidden">Painel do Colaborador</h1>
+                        {isChatPage ? (
+                            <div className="w-full max-w-xs">
+                                <Select value={selectedSector} onValueChange={setSelectedSector}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione um setor" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {sectors.map(sector => (
+                                             <SelectItem key={sector.id} value={sector.id}>{sector.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        ) : (
+                           <h1 className="text-lg font-semibold md:block hidden">Painel do Colaborador</h1>
+                        )}
                     </div>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>

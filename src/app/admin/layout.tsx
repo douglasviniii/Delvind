@@ -35,7 +35,7 @@ const navItems = [
     { href: "/admin/partners", icon: Handshake, label: "Parceiros", notificationKey: null },
     { href: "/admin/financeiro", icon: DollarSign, label: "Financeiro", notificationKey: 'finance' },
     { href: "/admin/requests", icon: Archive, label: "Pedidos e Revisão", notificationKey: 'requests' },
-    { href: "/admin/chat", icon: MessageSquare, label: "Chat", notificationKey: 'chat' },
+    { href: "/collaborator/chat", icon: MessageSquare, label: "Chat", notificationKey: 'chat' },
     { href: "/admin/settings", icon: Settings, label: "Configuração", notificationKey: null },
 ];
 
