@@ -9,7 +9,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { ServicesSection } from '../../components/layout/services-section';
-import { BlogCarousel } from '../../components/layout/blog-carousel';
+import { PortfolioCarousel } from '../../components/layout/portfolio-carousel';
 import { PartnersCarousel } from '../../components/layout/partners-carousel';
 import { Separator } from '../../components/ui/separator';
 
@@ -50,7 +50,7 @@ export default function DashboardPage() {
       <div className='space-y-8'>
         <ServicesSection />
         <Separator className="my-8" />
-        <BlogCarousel />
+        <PortfolioCarousel />
         <Separator />
         <PartnersCarousel />
       </div>
