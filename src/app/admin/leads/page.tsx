@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db } from '../../../lib/firebase';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../../components/ui/dialog';
@@ -182,19 +182,21 @@ export default function LeadsPage() {
 
   const handleCreateOnboarding = async (lead: Lead) => {
     try {
-        const response = await fetch('/api/create-onboarding', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ leadId: lead.id, name: lead.name, email: lead.email }),
+        const onboardingCollection = collection(db, 'onboarding');
+        const newOnboardingDocRef = doc(onboardingCollection); // Create a reference with a new ID
+        
+        await setDoc(newOnboardingDocRef, {
+            leadId: lead.id,
+            name: lead.name,
+            email: lead.email,
+            status: 'Pendente',
+            createdAt: serverTimestamp(),
         });
+        
+        const leadRef = doc(db, 'leads', lead.id);
+        await updateDoc(leadRef, { onboardingLinkId: newOnboardingDocRef.id });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.error || 'Falha ao criar ficha cadastral');
-        }
-
-        handleCopyLink(`/onboarding/${result.onboardingId}`);
+        handleCopyLink(`/onboarding/${newOnboardingDocRef.id}`);
     } catch (error) {
         console.error("Error creating onboarding:", error);
         toast({ title: 'Erro', description: 'Não foi possível criar a ficha cadastral.', variant: 'destructive'});
