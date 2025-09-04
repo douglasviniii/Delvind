@@ -1,3 +1,4 @@
+
 // Importa os módulos necessários do Firebase
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -7,13 +8,13 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Configuração do Firebase (copiada do console)
 const firebaseConfig = {
-  apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
-  authDomain: "venda-fcil-pdv.firebaseapp.com",
-  projectId: "venda-fcil-pdv",
-  storageBucket: "venda-fcil-pdv.appspot.com",
-  messagingSenderId: "114570788878",
-  appId: "1:114570788878:web:1e3fa51754f3ae6862fc5f",
-  measurementId: "G-792KHTQP7R"
+  "projectId": "delvind",
+  "appId": "1:476982958943:web:c45febb71dc4e1822df4ea",
+  "storageBucket": "delvind.firebasestorage.app",
+  "apiKey": "AIzaSyBg-y_MHWIR6TpSWlOUv02Au99M2DvMpvQ",
+  "authDomain": "delvind.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "476982958943"
 };
 
 // Inicializa o Firebase (garante que só inicializa uma vez)
