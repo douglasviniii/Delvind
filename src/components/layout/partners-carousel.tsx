@@ -61,16 +61,16 @@ export function PartnersCarousel() {
                         <CarouselItem key={partner.id} className="md:basis-1/2 lg:basis-1/3 pl-4">
                            <div className="p-1 h-full">
                                <Card className="flex flex-col h-full text-center items-center overflow-hidden group">
+                                  <div className="relative overflow-hidden w-full">
+                                    <Image
+                                        src={partner.logoUrl}
+                                        alt={partner.name}
+                                        width={600}
+                                        height={400}
+                                        className="w-full h-48 object-contain transition-transform duration-300 group-hover:scale-105 p-4 bg-muted"
+                                    />
+                                  </div>
                                   <CardHeader className='items-center'>
-                                      <div className="relative h-24 w-48 mb-4">
-                                          <Image
-                                              src={partner.logoUrl}
-                                              alt={partner.name}
-                                              layout="fill"
-                                              objectFit="contain"
-                                              className="transition-all duration-300"
-                                          />
-                                      </div>
                                       <CardTitle>{partner.name}</CardTitle>
                                   </CardHeader>
                                   <CardContent className="flex-1">
