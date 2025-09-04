@@ -203,21 +203,11 @@ export default function LeadsPage() {
 
 
   const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
-    const originalLeads = [...allLeads];
-    setAllLeads(prevLeads => prevLeads.map(lead => lead.id === leadId ? { ...lead, status: newStatus } : lead));
     try {
-        const response = await fetch('/api/update-lead-status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ leadId, newStatus }),
-        });
-        if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to update status');
-        }
+        const leadRef = doc(db, 'leads', leadId);
+        await updateDoc(leadRef, { status: newStatus });
         toast({ title: "Status Atualizado!", description: `O lead foi marcado como "${statusConfig[newStatus].label}".` });
     } catch (error) {
-        setAllLeads(originalLeads);
         console.error("Error updating status: ", error);
         toast({ title: 'Erro', description: 'Não foi possível atualizar o status.', variant: 'destructive'});
     }
@@ -305,23 +295,17 @@ export default function LeadsPage() {
 
   return (
     <>
-      <main className="flex-1 p-6">
+      <main className="flex-1 space-y-6">
         <Tabs defaultValue="dashboard">
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Leads e Clientes</h1>
-                    <p className="text-muted-foreground">Gerencie o funil de aquisição de novos clientes.</p>
-                </div>
-                <TabsList>
-                    <TabsTrigger value="dashboard"><BarChart2 className="mr-2 h-4 w-4"/>Dashboard CRM</TabsTrigger>
-                    <TabsTrigger value="leads"><UsersIcon className="mr-2 h-4 w-4"/>Leads</TabsTrigger>
-                    <TabsTrigger value="onboarding"><FileText className="mr-2 h-4 w-4"/>Fichas Cadastrais</TabsTrigger>
-                    <TabsTrigger value="curriculums"><FileUp className="mr-2 h-4 w-4" />Currículos</TabsTrigger>
-                </TabsList>
-            </div>
+            <TabsList>
+                <TabsTrigger value="dashboard"><BarChart2 className="mr-2 h-4 w-4"/>Dashboard CRM</TabsTrigger>
+                <TabsTrigger value="leads"><UsersIcon className="mr-2 h-4 w-4"/>Leads</TabsTrigger>
+                <TabsTrigger value="onboarding"><FileText className="mr-2 h-4 w-4"/>Fichas Cadastrais</TabsTrigger>
+                <TabsTrigger value="curriculums"><FileUp className="mr-2 h-4 w-4" />Currículos</TabsTrigger>
+            </TabsList>
             
-            <TabsContent value="dashboard">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+            <TabsContent value="dashboard" className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     {Object.entries(statusConfig).map(([key, { label, color }]) => (
                         <StatCard key={key} title={label} value={stats[key as LeadStatus] || 0} color={color.replace('bg-', 'border-')}/>
                     ))}
@@ -350,128 +334,134 @@ export default function LeadsPage() {
                 </Card>
             </TabsContent>
 
-            <TabsContent value="leads">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        <Button onClick={() => handleCopyLink('/landing/campaign')}><Copy className="mr-2 h-4 w-4" /> Copiar Link para Campanhas</Button>
-                        <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Exportar Leads</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Exportar Leads</DialogTitle>
-                                <DialogDescription>
-                                  Selecione os campos que deseja incluir no arquivo CSV. Apenas os leads do período selecionado serão incluídos.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                  <div className="flex items-center space-x-2">
-                                      <Checkbox id="export-name" checked={exportFields.name} onCheckedChange={(checked) => setExportFields(prev => ({...prev, name: !!checked}))} />
-                                      <Label htmlFor="export-name">Nome</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                      <Checkbox id="export-email" checked={exportFields.email} onCheckedChange={(checked) => setExportFields(prev => ({...prev, email: !!checked}))} />
-                                      <Label htmlFor="export-email">Email</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                      <Checkbox id="export-phone" checked={exportFields.phone} onCheckedChange={(checked) => setExportFields(prev => ({...prev, phone: !!checked}))} />
-                                      <Label htmlFor="export-phone">Telefone</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                      <Checkbox id="export-service" checked={exportFields.service} onCheckedChange={(checked) => setExportFields(prev => ({...prev, service: !!checked}))} />
-                                      <Label htmlFor="export-service">Serviço de Interesse</Label>
-                                  </div>
-                              </div>
-                               <Button onClick={() => handleExport('full')} className='w-full'>Baixar Arquivo .CSV</Button>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button id="date" variant="outline" className={cn("w-[300px] justify-start text-left font-normal", !date && "text-muted-foreground")}>
-                                    <Calendar className="mr-2 h-4 w-4" />
-                                    {date?.from ? (date.to ? `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`: format(date.from, "LLL dd, y")) : <span>Escolha um intervalo</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="end"><CalendarPicker initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2}/></PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
-                {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-56 w-full" />)}
-                    </div>
-                ) : filteredLeads.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredLeads.map((lead) => {
-                          const buttonState = getOnboardingButtonState(lead);
-                          return (
-                            <Card key={lead.id} className='flex flex-col'>
-                                <CardHeader className='pb-2'>
-                                    <CardTitle className="flex items-start justify-between gap-2">
-                                    <span className='flex items-center gap-2'><User className="h-5 w-5 text-primary" /> {lead.name}</span>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuSub>
-                                                    <DropdownMenuSubTrigger>Alterar Status</DropdownMenuSubTrigger>
-                                                    <DropdownMenuSubContent>
-                                                        {Object.entries(statusConfig).map(([key, {label}]) => (
-                                                            <DropdownMenuItem key={key} onSelect={() => handleStatusChange(lead.id, key as LeadStatus)}>
-                                                                {lead.status === key && <Check className="mr-2 h-4 w-4" />} {label}
-                                                            </DropdownMenuItem>
-                                                        ))}
-                                                    </DropdownMenuSubContent>
-                                                </DropdownMenuSub>
-                                                <DropdownMenuItem onClick={() => { setSelectedLead(lead); setIsModalOpen(true);}}>
-                                                    <Eye className="mr-2 h-4 w-4" /> Visualizar
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <AlertDialog>
-                                                  <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-red-500 hover:bg-red-50 focus:bg-red-100 focus:text-red-600">
-                                                      <Trash2 className="mr-2 h-4 w-4" /> Excluir
+            <TabsContent value="leads" className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Todos os Leads</CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardDescription>Gerencie todos os leads recebidos.</CardDescription>
+                             <div className="flex items-center gap-2">
+                                <Button onClick={() => handleCopyLink('/landing/campaign')}><Copy className="mr-2 h-4 w-4" /> Copiar Link para Campanhas</Button>
+                                <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Exportar Leads</Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Exportar Leads</DialogTitle>
+                                        <DialogDescription>
+                                        Selecione os campos que deseja incluir no arquivo CSV. Apenas os leads do período selecionado serão incluídos.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="export-name" checked={exportFields.name} onCheckedChange={(checked) => setExportFields(prev => ({...prev, name: !!checked}))} />
+                                            <Label htmlFor="export-name">Nome</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="export-email" checked={exportFields.email} onCheckedChange={(checked) => setExportFields(prev => ({...prev, email: !!checked}))} />
+                                            <Label htmlFor="export-email">Email</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="export-phone" checked={exportFields.phone} onCheckedChange={(checked) => setExportFields(prev => ({...prev, phone: !!checked}))} />
+                                            <Label htmlFor="export-phone">Telefone</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="export-service" checked={exportFields.service} onCheckedChange={(checked) => setExportFields(prev => ({...prev, service: !!checked}))} />
+                                            <Label htmlFor="export-service">Serviço de Interesse</Label>
+                                        </div>
+                                    </div>
+                                    <Button onClick={() => handleExport('full')} className='w-full'>Baixar Arquivo .CSV</Button>
+                                    </DialogContent>
+                                </Dialog>
+                                 <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button id="date" variant="outline" className={cn("w-[300px] justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                                            <Calendar className="mr-2 h-4 w-4" />
+                                            {date?.from ? (date.to ? `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`: format(date.from, "LLL dd, y")) : <span>Escolha um intervalo</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="end"><CalendarPicker initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2}/></PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-56 w-full" />)}
+                        </div>
+                    ) : filteredLeads.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredLeads.map((lead) => {
+                            const buttonState = getOnboardingButtonState(lead);
+                            return (
+                                <Card key={lead.id} className='flex flex-col'>
+                                    <CardHeader className='pb-2'>
+                                        <CardTitle className="flex items-start justify-between gap-2">
+                                        <span className='flex items-center gap-2'><User className="h-5 w-5 text-primary" /> {lead.name}</span>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger>Alterar Status</DropdownMenuSubTrigger>
+                                                        <DropdownMenuSubContent>
+                                                            {Object.entries(statusConfig).map(([key, {label}]) => (
+                                                                <DropdownMenuItem key={key} onSelect={() => handleStatusChange(lead.id, key as LeadStatus)}>
+                                                                    {lead.status === key && <Check className="mr-2 h-4 w-4" />} {label}
+                                                                </DropdownMenuItem>
+                                                            ))}
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
+                                                    <DropdownMenuItem onClick={() => { setSelectedLead(lead); setIsModalOpen(true);}}>
+                                                        <Eye className="mr-2 h-4 w-4" /> Visualizar
                                                     </DropdownMenuItem>
-                                                  </AlertDialogTrigger>
-                                                  <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                                                      <AlertDialogDescription>Esta ação excluirá o lead permanentemente. Deseja continuar?</AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                      <AlertDialogAction onClick={() => handleDeleteLead(lead.id)} className="bg-destructive hover:bg-destructive/90">
-                                                        Sim, excluir
-                                                      </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                  </AlertDialogContent>
-                                                </AlertDialog>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </CardTitle>
-                                    <CardDescription>{formatDate(lead.createdAt)}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-2 text-sm flex-1">
-                                    <p className="flex items-center gap-2 text-muted-foreground"><Mail className="h-4 w-4" />{lead.email}</p>
-                                    <p className="flex items-center gap-2 text-muted-foreground"><Phone className="h-4 w-4" />{lead.phone}</p>
-                                    <p className="flex items-center gap-2 font-medium"><Briefcase className="h-4 w-4" />{lead.service}</p>
-                                </CardContent>
-                                <CardFooter className='justify-between'>
-                                    <div className='flex items-center gap-2 text-xs font-semibold'><span className={`h-2 w-2 rounded-full ${statusConfig[lead.status]?.color || 'bg-gray-400'}`}></span>{statusConfig[lead.status]?.label || 'Desconhecido'}</div>
-                                    <Button size="sm" onClick={buttonState.action} disabled={buttonState.disabled} variant={buttonState.disabled ? "secondary" : "default"}>
-                                      <UserPlus className="mr-2 h-4 w-4"/>
-                                      {buttonState.text}
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                          );
-                        })}
-                    </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-12"><p>Nenhum lead encontrado para o período selecionado.</p></div>
-                )}
+                                                    <DropdownMenuSeparator />
+                                                    <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-red-500 hover:bg-red-50 focus:bg-red-100 focus:text-red-600">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                                        <AlertDialogDescription>Esta ação excluirá o lead permanentemente. Deseja continuar?</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteLead(lead.id)} className="bg-destructive hover:bg-destructive/90">
+                                                            Sim, excluir
+                                                        </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </CardTitle>
+                                        <CardDescription>{formatDate(lead.createdAt)}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm flex-1">
+                                        <p className="flex items-center gap-2 text-muted-foreground"><Mail className="h-4 w-4" />{lead.email}</p>
+                                        <p className="flex items-center gap-2 text-muted-foreground"><Phone className="h-4 w-4" />{lead.phone}</p>
+                                        <p className="flex items-center gap-2 font-medium"><Briefcase className="h-4 w-4" />{lead.service}</p>
+                                    </CardContent>
+                                    <CardFooter className='justify-between'>
+                                        <div className='flex items-center gap-2 text-xs font-semibold'><span className={`h-2 w-2 rounded-full ${statusConfig[lead.status]?.color || 'bg-gray-400'}`}></span>{statusConfig[lead.status]?.label || 'Desconhecido'}</div>
+                                        <Button size="sm" onClick={buttonState.action} disabled={buttonState.disabled} variant={buttonState.disabled ? "secondary" : "default"}>
+                                        <UserPlus className="mr-2 h-4 w-4"/>
+                                        {buttonState.text}
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-12"><p>Nenhum lead encontrado para o período selecionado.</p></div>
+                    )}
+                    </CardContent>
+                </Card>
             </TabsContent>
             
             <TabsContent value="onboarding">
