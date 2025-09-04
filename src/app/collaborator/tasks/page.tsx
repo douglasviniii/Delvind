@@ -194,11 +194,7 @@ export default function CollaboratorTasksPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-            <h1 className="text-2xl font-bold">Tarefas e Agenda</h1>
-            <p className="text-muted-foreground">Gerencie suas tarefas e compromissos.</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
          <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
             <DialogTrigger asChild>
                 <Button><PlusCircle className="mr-2 h-4 w-4" /> Criar Tarefa Pessoal</Button>

@@ -108,7 +108,7 @@ export default function CollaboratorDashboardPage() {
   return (
     <main className="flex-1 space-y-6">
        {profileIncomplete && (
-        <Alert className="bg-card border-primary">
+        <Alert className="mb-6 bg-card border-primary">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Pendências no seu perfil!</AlertTitle>
           <AlertDescription>
@@ -116,11 +116,7 @@ export default function CollaboratorDashboardPage() {
           </AlertDescription>
         </Alert>
       )}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Dashboard do Colaborador</h1>
-        <p className="text-muted-foreground">Bem-vindo, {user?.displayName || user?.email}!</p>
-      </div>
-
+      
       <Card>
         <CardHeader>
           <CardTitle>Tarefas Atribuídas a Mim</CardTitle>

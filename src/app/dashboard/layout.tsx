@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from "../../components/ui/button";
 import { Home, User, Settings, LifeBuoy, LogOut, Menu, PenSquare, DollarSign, Bell, Package, MessageSquare, FileSignature, Receipt, Sun, Moon, Calendar, FileText, Rss } from "lucide-react";
 import Link from 'next/link';
@@ -39,6 +39,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       contracts: false,
       documents: false,
   });
+
+  const navItems = [
+    { href: "/dashboard", label: "Explore", icon: Home, notificationKey: null },
+    { href: "/dashboard/schedule", label: "Agendamentos", icon: Calendar, notificationKey: null },
+    { href: "/dashboard/budgets", label: "Meus Orçamentos", icon: PenSquare, notificationKey: 'budgets' },
+    { href: "/dashboard/contracts", label: "Meus Contratos", icon: FileSignature, notificationKey: 'contracts' },
+    { href: "/dashboard/documents", label: "Meus Documentos", icon: FileText, notificationKey: 'documents' },
+    { href: "/dashboard/products", label: "Meus Produtos", icon: Package, notificationKey: null },
+    { href: "/dashboard/feed-blog", label: "Feed do Blog", icon: Rss, notificationKey: null },
+    { href: "/dashboard/payments", label: "Faturas e Pagamentos", icon: DollarSign, notificationKey: 'payments' },
+    { href: "/dashboard/receipts", label: "Meus Comprovantes", icon: Receipt, notificationKey: 'receipts' },
+  ];
+
+  const pageTitle = useMemo(() => {
+    const currentItem = navItems.find(item => {
+        if (item.href === "/dashboard") {
+            return pathname === "/dashboard";
+        }
+        return pathname.startsWith(item.href);
+    });
+    return currentItem?.label || 'Painel do Cliente';
+  }, [pathname]);
 
   useEffect(() => {
     // Ensure user and user.uid exist before proceeding
@@ -96,18 +118,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   const userInitial = user?.displayName?.[0] || user?.email?.[0] || '';
-
-  const navItems = [
-    { href: "/dashboard", label: "Explore", icon: Home, notificationKey: null },
-    { href: "/dashboard/schedule", label: "Agendamentos", icon: Calendar, notificationKey: null },
-    { href: "/dashboard/budgets", label: "Meus Orçamentos", icon: PenSquare, notificationKey: 'budgets' },
-    { href: "/dashboard/contracts", label: "Meus Contratos", icon: FileSignature, notificationKey: 'contracts' },
-    { href: "/dashboard/documents", label: "Meus Documentos", icon: FileText, notificationKey: 'documents' },
-    { href: "/dashboard/products", label: "Meus Produtos", icon: Package, notificationKey: null },
-    { href: "/dashboard/feed-blog", label: "Feed do Blog", icon: Rss, notificationKey: null },
-    { href: "/dashboard/payments", label: "Faturas e Pagamentos", icon: DollarSign, notificationKey: 'payments' },
-    { href: "/dashboard/receipts", label: "Meus Comprovantes", icon: Receipt, notificationKey: 'receipts' },
-  ];
 
   const NavLinks = ({ isSheet = false }: { isSheet?: boolean }) => (
     <>
@@ -197,7 +207,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </SheetContent>
           </Sheet>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold">Explore</h1>
+            <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="relative">

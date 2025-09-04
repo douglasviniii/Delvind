@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from "../../components/ui/button";
 import { useAuth, ProtectedRoute } from "../../context/auth-context";
 import { auth, db } from "../../lib/firebase";
@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
 const navItems = [
-    { href: "/admin", icon: Home, label: "Dashboard", notificationKey: null },
+    { href: "/admin", label: "Dashboard", notificationKey: null },
     { href: "/admin/analytics", icon: AreaChart, label: "Analytics", notificationKey: null },
     { href: "/admin/reports", icon: BarChart, label: "Relatórios", notificationKey: null },
     { href: "/admin/collaborators", icon: Briefcase, label: "Colaboradores", notificationKey: null },
@@ -92,6 +92,19 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         }
     };
     
+    const pageTitle = useMemo(() => {
+        const currentItem = navItems.find(item => {
+            if (item.href === "/admin") {
+                return pathname === "/admin";
+            }
+            if (item.href === "/collaborator/chat") {
+                return pathname.startsWith(item.href);
+            }
+            return pathname.startsWith(item.href);
+        });
+        return currentItem?.label || 'Painel de Administração';
+    }, [pathname]);
+
     const userInitial = user?.displayName?.[0] || user?.email?.[0] || 'A';
 
     const SidebarNav = ({ className }: { className?: string }) => (
@@ -193,7 +206,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                                 </Select>
                             </div>
                         ) : (
-                            <h1 className="text-lg font-semibold md:block hidden">Painel de Administração</h1>
+                            <h1 className="text-lg font-semibold">{pageTitle}</h1>
                         )}
                     </div>
                     <Button variant="outline" size="icon" className="h-8 w-8">

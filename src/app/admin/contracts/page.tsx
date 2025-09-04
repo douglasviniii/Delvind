@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -302,11 +303,7 @@ export default function ContractsPage() {
   return (
     <>
     <main className="flex-1 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Contratos</h1>
-          <p className="text-muted-foreground">Gerencie e gere os contratos para os orçamentos aprovados.</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
         <Dialog open={isManualModalOpen} onOpenChange={setIsManualModalOpen}>
             <DialogTrigger asChild>
                 <Button>

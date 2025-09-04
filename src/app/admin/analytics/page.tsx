@@ -8,16 +8,7 @@ import Link from "next/link";
 
 export default function AnalyticsPage() {
   return (
-    <main className="flex-1 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Analytics do Site</h1>
-          <p className="text-muted-foreground">
-            Acompanhe o tráfego e o engajamento do seu site.
-          </p>
-        </div>
-      </div>
-      
+    <main className="flex-1">
       <Card className="text-center">
         <CardHeader>
           <CardTitle>Integre com o Google Analytics</CardTitle>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -115,11 +116,7 @@ export default function PortfolioManagementPage() {
 
   return (
     <main className="flex-1 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Gerenciar Portfólio</h1>
-          <p className="text-muted-foreground">Adicione e gerencie os projetos exibidos no site.</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => { setEditingItem(null); form.reset(); setIsDialogOpen(true); }}>

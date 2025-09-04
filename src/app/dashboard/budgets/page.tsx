@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -159,13 +160,6 @@ export default function CustomerBudgetsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Meus Orçamentos</h1>
-          <p className="text-muted-foreground">Visualize, aprove ou recuse os orçamentos enviados.</p>
-        </div>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Lista de Orçamentos</CardTitle>

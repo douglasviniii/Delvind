@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -250,13 +251,6 @@ export default function CustomerPaymentsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Faturas e Pagamentos</h1>
-          <p className="text-muted-foreground">Visualize e gerencie suas faturas pendentes e histórico de pagamentos.</p>
-        </div>
-      </div>
-
       <Dialog open={isBoletoModalOpen} onOpenChange={setIsBoletoModalOpen}>
         <DialogContent>
             <DialogHeader>

@@ -100,11 +100,7 @@ export default function BudgetsPage() {
 
   return (
     <main className="flex-1">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Gerenciar Orçamentos</h1>
-          <p className="text-muted-foreground">Crie, visualize e gerencie os orçamentos dos clientes.</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
         <Button asChild>
           <Link href="/admin/budgets/create">
             <PlusCircle className="mr-2 h-4 w-4" />

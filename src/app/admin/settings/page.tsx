@@ -219,11 +219,7 @@ export default function SettingsPage() {
 
     return (
         <main className="flex-1 p-6">
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Configurações do Sistema</h1>
-                    <p className="text-muted-foreground">Gerencie as configurações gerais e de módulos do sistema.</p>
-                </div>
+            <div className="flex items-center justify-end mb-6">
                 <Button onClick={handleSaveChanges} disabled={isSaving || loading}>
                     {isSaving ? <LogoSpinner className="mr-2" /> : null}
                     {isSaving ? 'Salvando...' : 'Salvar Alterações'}

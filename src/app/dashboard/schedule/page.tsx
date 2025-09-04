@@ -186,11 +186,7 @@ export default function SchedulePage() {
 
   return (
     <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-6">
-            <div>
-                <h1 className="text-2xl font-bold">Agenda de Reuniões</h1>
-                <p className="text-muted-foreground">Marque e gerencie suas conversas com nossos especialistas.</p>
-            </div>
+        <div className="flex items-center justify-end mb-6">
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
                     <Button><PlusCircle className="mr-2 h-4 w-4" /> Nova Reunião</Button>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -158,13 +159,6 @@ export default function CustomerContractsPage() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Meus Contratos</h1>
-          <p className="text-muted-foreground">Acompanhe o status e assine seus contratos.</p>
-        </div>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Lista de Contratos</CardTitle>

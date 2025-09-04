@@ -174,7 +174,7 @@ export default function CustomerDocumentsPage() {
   );
 
   const renderMobileList = () => (
-    <div className='md:hidden space-y-4'>
+     <div className='md:hidden space-y-4'>
         {sortedDocuments.map(docItem => (
             <Card key={docItem.id}>
                 <CardHeader>
@@ -207,18 +207,11 @@ export default function CustomerDocumentsPage() {
                 </CardFooter>
             </Card>
         ))}
-    </div>
+     </div>
   );
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Meus Documentos</h1>
-          <p className="text-muted-foreground">Visualize os relatórios e documentos compartilhados com você.</p>
-        </div>
-      </div>
-
        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-4xl h-[90vh]">
           <DialogHeader>

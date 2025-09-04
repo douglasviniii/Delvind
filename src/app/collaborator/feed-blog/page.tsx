@@ -47,13 +47,6 @@ export default function FeedBlogPage() {
 
   return (
     <main className="flex-1">
-        <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold font-headline mb-4">Feed do Blog</h1>
-        <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Fique por dentro das últimas notícias, insights e tendências do mundo do marketing digital, SEO e desenvolvimento web.
-        </p>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {loading ? (
             Array.from({ length: 3 }).map((_, i) => (

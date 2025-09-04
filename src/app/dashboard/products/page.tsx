@@ -219,13 +219,6 @@ export default function CustomerProductsPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Meus Produtos e Serviços</h1>
-          <p className="text-muted-foreground">Gerencie seus produtos e assinaturas ativas.</p>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)

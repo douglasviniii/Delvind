@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from "../../components/ui/button";
 import { useAuth, ProtectedRoute } from "../../context/auth-context";
 import { auth, db } from "../../lib/firebase";
@@ -42,6 +42,16 @@ function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) 
         receipts: false,
         reports: false,
     });
+
+    const pageTitle = useMemo(() => {
+        const currentItem = navItems.find(item => {
+            if (item.href === "/collaborator") {
+                return pathname === "/collaborator";
+            }
+            return pathname.startsWith(item.href);
+        });
+        return currentItem?.label || 'Painel do Colaborador';
+    }, [pathname]);
 
     useEffect(() => {
         if (!user) return;
@@ -201,7 +211,7 @@ function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) 
                            <SheetHeader className="sr-only">
                                 <SheetTitle className="sr-only">Menu Principal</SheetTitle>
                            </SheetHeader>
-                           <SidebarNav isSheet={true}/>
+                           <SidebarNav isSheet={true} />
                         </SheetContent>
                     </Sheet>
                     <div className="w-full flex-1">
@@ -219,7 +229,7 @@ function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) 
                                 </Select>
                             </div>
                         ) : (
-                           <h1 className="text-lg font-semibold md:block hidden">Painel do Colaborador</h1>
+                           <h1 className="text-lg font-semibold">{pageTitle}</h1>
                         )}
                     </div>
                      <DropdownMenu>

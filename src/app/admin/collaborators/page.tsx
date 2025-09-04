@@ -163,11 +163,7 @@ export default function CollaboratorsPage() {
   return (
     <>
       <main className="flex-1 p-6">
-          <div className="flex items-center justify-between mb-6">
-              <div>
-                  <h1 className="text-2xl font-bold">Gerenciar Colaboradores</h1>
-                  <p className="text-muted-foreground">Adicione, edite ou remova colaboradores.</p>
-              </div>
+          <div className="flex items-center justify-end mb-6">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                       <Button>

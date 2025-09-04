@@ -106,13 +106,6 @@ export default function NotificationsPage() {
 
   return (
     <main className="flex-1 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Enviar Notificações</h1>
-          <p className="text-muted-foreground">Envie comunicados para clientes, colaboradores ou para o site público.</p>
-        </div>
-      </div>
-
       <Tabs defaultValue="send" className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-lg mx-auto">
           <TabsTrigger value="send"><Send className='mr-2 h-4 w-4'/> Enviar Notificação</TabsTrigger>

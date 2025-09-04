@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -122,11 +123,7 @@ export default function PartnersManagementPage() {
 
   return (
     <main className="flex-1 p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Gerenciar Parceiros</h1>
-          <p className="text-muted-foreground">Adicione e gerencie os parceiros e suas logos.</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
         <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
           if (!isOpen) {
             setEditingPartner(null);

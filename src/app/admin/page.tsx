@@ -297,11 +297,7 @@ function AdminDashboardContent() {
 
   return (
     <main className="flex-1 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Visão geral do seu negócio em tempo real.</p>
-        </div>
+      <div className="flex items-center justify-end">
         <div className="w-56">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                 <SelectTrigger>

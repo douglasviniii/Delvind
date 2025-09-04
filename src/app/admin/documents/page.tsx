@@ -300,11 +300,7 @@ export default function DocumentsPage() {
   return (
     <>
       <main className="flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between mb-6">
-              <div>
-                  <h1 className="text-2xl font-bold">Gerenciador de Documentos</h1>
-                  <p className="text-muted-foreground">Crie pastas e organize seus documentos.</p>
-              </div>
+          <div className="flex items-center justify-end mb-6">
               <div className='flex gap-2'>
                   <Button onClick={() => setIsFolderModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Nova Pasta</Button>
                   <input

@@ -863,11 +863,7 @@ export default function FinanceiroPage() {
 
 
     <main className="flex-1 p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Gerenciar Financeiro</h1>
-          <p className="text-muted-foreground">Controle as finanças, cobranças e recebimentos.</p>
-        </div>
+      <div className="flex items-center justify-end mb-6">
          <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setIsSaidaModalOpen(true)}>
                 <ArrowDownUp className="mr-2 h-4 w-4" />

@@ -574,7 +574,6 @@ export default function ClientsPage() {
   return (
     <>
       <main className="flex-1 p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl font-bold">Gerenciar Clientes</h1><p className="text-muted-foreground">Visualize e gerencie os clientes cadastrados.</p></div></div>
         <Card>
             <CardHeader>
                 <CardTitle>Lista de Clientes</CardTitle>
@@ -796,5 +795,3 @@ export default function ClientsPage() {
     </>
   );
 }
-
-    
