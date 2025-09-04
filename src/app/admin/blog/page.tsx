@@ -256,7 +256,11 @@ export default function BlogManagementPage() {
                     <FormItem>
                         <FormLabel>Conteúdo do Post</FormLabel>
                         <FormControl>
-                            <TiptapEditor value={field.value} onChange={field.onChange} />
+                            <TiptapEditor
+                                key={editingPost?.id || 'new-post'}
+                                value={field.value}
+                                onChange={field.onChange}
+                            />
                         </FormControl>
                         <FormMessage />
                     </FormItem>

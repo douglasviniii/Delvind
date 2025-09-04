@@ -272,6 +272,7 @@ export default function AdminReportsPage() {
                                     <FormLabel>Conteúdo</FormLabel>
                                     <FormControl>
                                         <TiptapEditor
+                                            key={editingReport?.id || 'new-report'}
                                             value={field.value}
                                             onChange={field.onChange}
                                         />
