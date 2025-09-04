@@ -10,11 +10,12 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 const firebaseConfig = {
   "projectId": "delvind",
   "appId": "1:476982958943:web:c45febb71dc4e1822df4ea",
-  "storageBucket": "delvind.firebasestorage.app",
+  "storageBucket": "delvind.appspot.com",
   "apiKey": "AIzaSyBg-y_MHWIR6TpSWlOUv02Au99M2DvMpvQ",
   "authDomain": "delvind.firebaseapp.com",
   "measurementId": "",
-  "messagingSenderId": "476982958943"
+  "messagingSenderId": "476982958943",
+  "databaseURL": "https://delvind.firebaseio.com"
 };
 
 // Inicializa o Firebase (garante que só inicializa uma vez)
