@@ -36,7 +36,7 @@ export default function DashboardPage() {
   }, [user]);
 
   return (
-    <>
+    <div className="container">
       {profileIncomplete && (
         <Alert className="mb-6 bg-card">
           <AlertCircle className="h-4 w-4" />
@@ -47,14 +47,13 @@ export default function DashboardPage() {
         </Alert>
       )}
       
-      <div className='space-y-8'>
+      <div className='space-y-12 py-8'>
         <ServicesSection />
-        <Separator className="my-8" />
+        <Separator />
         <PortfolioCarousel />
         <Separator />
         <PartnersCarousel />
       </div>
-
-    </>
+    </div>
   );
 }
