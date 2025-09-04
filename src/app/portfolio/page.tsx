@@ -12,12 +12,6 @@ import { ArrowRight } from "lucide-react";
 import { Skeleton } from '../../components/ui/skeleton';
 import { Header } from '@/components/layout/header';
 import { FooterSection } from '@/components/layout/footer-section';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: "Portfólio de Clientes no Oeste do Paraná | Delvind",
-  description: "Conheça os projetos de sucesso que a Delvind desenvolveu para clientes e parceiros na região do Oeste do Paraná.",
-};
 
 type PortfolioItem = {
     id: string;

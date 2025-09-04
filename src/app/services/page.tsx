@@ -10,13 +10,6 @@ import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
 import { Header } from "@/components/layout/header";
 import { FooterSection } from "@/components/layout/footer-section";
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: "Serviços de Websites, SEO e Apps em Medianeira | Delvind",
-  description: "A Delvind oferece serviços de criação de websites, SEO, aplicativos e posicionamento digital em Medianeira e Oeste do Paraná. Potencialize sua marca.",
-};
-
 
 const services = [
   {

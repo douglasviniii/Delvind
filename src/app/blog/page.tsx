@@ -11,12 +11,6 @@ import { ArrowRight, UserCircle, Calendar, Heart, Share2 } from "lucide-react";
 import { Skeleton } from '../../components/ui/skeleton';
 import { Header } from '@/components/layout/header';
 import { FooterSection } from '@/components/layout/footer-section';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: "Blog de Tecnologia e Marketing Digital | Delvind",
-  description: "Conheça nosso blog com artigos sobre tecnologia, SEO e marketing digital, com foco na realidade do Oeste do Paraná.",
-};
 
 type BlogPost = {
   id: string;

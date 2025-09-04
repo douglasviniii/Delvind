@@ -22,12 +22,6 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Header } from '@/components/layout/header';
 import { FooterSection } from '@/components/layout/footer-section';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: "Contato | Delvind - Fale Conosco em Medianeira e Oeste do Paraná",
-  description: "Fale com a equipe da Delvind para serviços de Websites, SEO, Apps e Posicionamento Digital em Medianeira e região Oeste do Paraná.",
-};
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome é obrigatório.' }),
