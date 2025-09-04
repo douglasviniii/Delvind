@@ -289,11 +289,7 @@ export default function TasksPage() {
   
   return (
     <main>
-        <div className="flex items-center justify-between mb-6">
-            <div>
-                <h1 className="text-2xl font-bold">Tarefas e Agenda</h1>
-                <p className="text-muted-foreground">Organize o fluxo de trabalho da sua equipe.</p>
-            </div>
+        <div className="flex items-center justify-end mb-6">
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
                     <Button><PlusCircle className="mr-2 h-4 w-4" /> Criar Compromisso</Button>
@@ -305,8 +301,8 @@ export default function TasksPage() {
                     </DialogHeader>
                     
                     <RadioGroup defaultValue="task" className='flex gap-4' onValueChange={(value) => setCommitmentType(value as any)}>
-                        <div className='flex items-center space-x-2'><RadioGroupItem value="task" id="task"/><FormLabel htmlFor='task'>Tarefa Interna</FormLabel></div>
-                        <div className='flex items-center space-x-2'><RadioGroupItem value="appointment" id="appointment"/><FormLabel htmlFor='appointment'>Reunião com Cliente</FormLabel></div>
+                        <div className='flex items-center space-x-2'><RadioGroupItem value="task" id="task"/><label htmlFor='task'>Tarefa Interna</label></div>
+                        <div className='flex items-center space-x-2'><RadioGroupItem value="appointment" id="appointment"/><label htmlFor='appointment'>Reunião com Cliente</label></div>
                     </RadioGroup>
 
                     {commitmentType === 'task' ? (
@@ -366,7 +362,6 @@ export default function TasksPage() {
             <TabsContent value="agenda" className="mt-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Próximos Compromissos</CardTitle>
                         <div className="pt-2">
                             <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
                                 <TabsList>
