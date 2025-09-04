@@ -10,7 +10,7 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 const firebaseConfig = {
   "projectId": "delvind",
   "appId": "1:476982958943:web:c45febb71dc4e1822df4ea",
-  "storageBucket": "delvind.appspot.com",
+  "storageBucket": "delvind.firebasestorage.app",
   "apiKey": "AIzaSyBg-y_MHWIR6TpSWlOUv02Au99M2DvMpvQ",
   "authDomain": "delvind.firebaseapp.com",
   "measurementId": "",
