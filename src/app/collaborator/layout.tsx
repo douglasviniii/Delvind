@@ -26,7 +26,7 @@ const navItems = [
     { href: "/collaborator/feed-blog", icon: Rss, label: "Feed Blog", notificationKey: null },
     { href: "/collaborator/contracts", icon: FileSignature, label: "Meus Contratos", notificationKey: 'contracts' },
     { href: "/collaborator/receipts", icon: Receipt, label: "Meus Recibos", notificationKey: 'receipts' },
-    { href: "/admin/chat", icon: MessageSquare, label: "Chat", notificationKey: null }, // Redirects to admin chat, assuming collaborator has access.
+    { href: "/admin/chat", icon: MessageSquare, label: "Chat", notificationKey: null },
 ];
 
 function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) {
