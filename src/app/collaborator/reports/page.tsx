@@ -18,6 +18,7 @@ import TiptapEditor from '../../../components/ui/tiptap-editor';
 import { useAuth } from '../../../context/auth-context';
 import { db } from '../../../lib/firebase';
 import { collection, addDoc, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const reportSchema = z.object({
@@ -264,7 +265,19 @@ export default function CollaboratorReportsPage() {
 
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <div className="sm:hidden mb-4">
+            <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma aba" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="my-reports">Meus Rascunhos</SelectItem>
+                    <SelectItem value="sent-reports">Relatórios Enviados</SelectItem>
+                    <SelectItem value="received-reports">Relatórios Recebidos</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+        <TabsList className="hidden sm:grid w-full grid-cols-3">
           <TabsTrigger value="my-reports">Meus Rascunhos</TabsTrigger>
           <TabsTrigger value="sent-reports">Relatórios Enviados</TabsTrigger>
           <TabsTrigger value="received-reports">Relatórios Recebidos</TabsTrigger>
@@ -386,7 +399,7 @@ export default function CollaboratorReportsPage() {
                         <TableCell>{report.authorName}</TableCell>
                         <TableCell>{report.sentAt ? report.sentAt.toDate().toLocaleDateString('pt-BR') : '...'}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleOpenViewDialog(report)}>Visualizar</Button>
+                          <Button variant="outline" size="sm" onClick={() => handleOpenViewDialog(report)}><Eye className="mr-2 h-4 w-4" />Visualizar</Button>
                            <Button variant="secondary" size="sm" onClick={() => handleDownloadPdf(report)}>
                             <Download className="mr-2 h-4 w-4"/>Baixar PDF
                           </Button>

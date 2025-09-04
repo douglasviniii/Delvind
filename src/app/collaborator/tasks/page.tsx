@@ -30,7 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '../../../hooks/use-toast';
 import { db } from '../../../lib/firebase';
 import { PlusCircle, MoreHorizontal, CalendarIcon, Trash2, Briefcase, ChevronLeft, ChevronRight, ListTodo } from 'lucide-react';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, orderBy, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../../context/auth-context';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -38,6 +38,7 @@ import { format, addMonths, subMonths, isSameDay, startOfToday } from 'date-fns'
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../../../components/ui/dropdown-menu';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 
@@ -300,26 +301,41 @@ export default function CollaboratorTasksPage() {
                 </Card>
             </TabsContent>
             <TabsContent value="calendar" className="mt-4">
-                 <Card>
-                    <CardHeader className='flex flex-row items-center justify-between'>
-                        <CardTitle className='capitalize'>{format(currentMonth, 'MMMM yyyy', { locale: ptBR })}</CardTitle>
-                        <div className='flex items-center gap-2'>
-                            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}><ChevronLeft className='w-4 h-4'/></Button>
-                            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight className='w-4 h-4'/></Button>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="capitalize">
+                            {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <Calendar
-                            mode="single"
-                            month={currentMonth}
-                            onMonthChange={setCurrentMonth}
-                            locale={ptBR}
-                            className="p-3 w-full"
-                            classNames={{
-                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
-                            day_today: "bg-accent text-accent-foreground rounded-full",
-                            }}
-                        />
+                    <Calendar
+                       mode="single"
+                       month={currentMonth}
+                       onMonthChange={setCurrentMonth}
+                       locale={ptBR}
+                       className="p-3 w-full"
+                       classNames={{
+                           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
+                           day_today: "bg-accent text-accent-foreground rounded-full"
+                       }}
+                       
+                    />
                     </CardContent>
                 </Card>
             </TabsContent>

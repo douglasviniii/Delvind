@@ -107,7 +107,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                             className={cn(
                                 "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
                                 pathname.startsWith(item.href) && item.href !== "/admin" && "bg-muted text-primary",
-                                pathname === "/admin" && item.href === "/admin" && "bg-muted text-primary"
+                                pathname === "/admin" && item.href === "/admin" && "bg-muted text-primary",
+                                item.label === 'Chat' && pathname.startsWith('/collaborator/chat') && "bg-muted text-primary" // Special case for chat
                             )}
                         >
                             <div className="flex items-center gap-3">
@@ -143,7 +144,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
        </div>
     );
     
-    const isChatPage = pathname === '/admin/chat';
+    const isChatPage = pathname === '/admin/chat' || pathname === '/collaborator/chat';
 
     return (
         <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
