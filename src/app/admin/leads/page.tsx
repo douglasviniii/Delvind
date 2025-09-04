@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db } from '../../../lib/firebase';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../../components/ui/dialog';
@@ -450,7 +450,7 @@ export default function LeadsPage() {
                                     </CardContent>
                                     <CardFooter className='justify-between'>
                                         <div className='flex items-center gap-2 text-xs font-semibold'><span className={`h-2 w-2 rounded-full ${statusConfig[lead.status]?.color || 'bg-gray-400'}`}></span>{statusConfig[lead.status]?.label || 'Desconhecido'}</div>
-                                        <Button size="sm" onClick={buttonState.action} disabled={buttonState.disabled} variant={buttonState.disabled ? "secondary" : "default"}>
+                                        <Button size="sm" onClick={() => buttonState.action(lead)} disabled={buttonState.disabled} variant={buttonState.disabled ? "secondary" : "default"}>
                                         <UserPlus className="mr-2 h-4 w-4"/>
                                         {buttonState.text}
                                         </Button>
