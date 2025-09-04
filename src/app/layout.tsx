@@ -8,8 +8,8 @@ import { Toaster } from '../components/ui/toaster';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Delvind',
-  description: 'Delvind - Soluções Digitais',
+  title: 'Delvind | Especialistas em Posicionamento Digital no Oeste do Paraná',
+  description: 'Especialistas em SEO e desenvolvimento de sites e aplicativos em Medianeira e região. Fazemos sua empresa aparecer nas primeiras posições do Google.',
   icons: {
     icon: 'https://darkgreen-lark-741030.hostingersite.com/img/logo.png',
   },

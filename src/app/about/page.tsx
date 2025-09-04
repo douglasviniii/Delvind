@@ -8,6 +8,12 @@ import { Linkedin, Twitter, Instagram } from 'lucide-react';
 import { Separator } from "../../components/ui/separator";
 import { Header } from "@/components/layout/header";
 import { FooterSection } from "@/components/layout/footer-section";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Sobre a Delvind | Referência em Posicionamento de Marcas no Oeste do Paraná",
+  description: "Conheça a Delvind, seus CEOs e nossa missão de ser referência em posicionamento de marcas na internet na região oeste do paraná.",
+};
 
 const teamMembers = [
   {
