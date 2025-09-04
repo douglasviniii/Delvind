@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
-import { PlusCircle, Download, FileText, Eye, Send } from 'lucide-react';
+import { PlusCircle, Download, FileText, Eye, Send, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '../../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
@@ -17,8 +16,9 @@ import { Input } from '../../../components/ui/input';
 import { useToast } from '../../../hooks/use-toast';
 import TiptapEditor from '../../../components/ui/tiptap-editor';
 import { useAuth } from '../../../context/auth-context';
-import { db, storage } from '../../../lib/firebase';
-import { collection, addDoc, query, where, onSnapshot, doc, updateDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
+import { collection, addDoc, query, where, onSnapshot, doc, updateDoc, serverTimestamp, getDocs, deleteDoc } from 'firebase/firestore';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 const reportSchema = z.object({
@@ -117,6 +117,17 @@ export default function AdminReportsPage() {
     setViewingReport(report);
     setIsViewDialogOpen(true);
   }
+  
+  const handleDeleteReport = async (reportId: string) => {
+    try {
+      await deleteDoc(doc(db, 'reports', reportId));
+      toast({ title: "Relatório Excluído", description: "O rascunho do relatório foi removido com sucesso." });
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      toast({ title: "Erro ao Excluir", description: "Não foi possível remover o relatório.", variant: "destructive" });
+    }
+  };
+
 
   const handleDownloadPdf = async (report: Report) => {
     const { jsPDF } = await import('jspdf');
@@ -166,7 +177,6 @@ export default function AdminReportsPage() {
     try {
         const reportRef = doc(db, 'reports', sendingReport.id);
         
-        // Update the original report status and add recipient info
         await updateDoc(reportRef, {
             status: 'Enviado',
             sentAt: serverTimestamp(),
@@ -227,7 +237,6 @@ export default function AdminReportsPage() {
         </Button>
       </div>
       
-      {/* Create/Edit Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={(isOpen) => {
           if (!isOpen) setEditingReport(null);
           setIsCreateDialogOpen(isOpen);
@@ -281,7 +290,6 @@ export default function AdminReportsPage() {
           </DialogContent>
       </Dialog>
       
-      {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
@@ -298,7 +306,6 @@ export default function AdminReportsPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Send Dialog */}
        <Dialog open={isSendDialogOpen} onOpenChange={(isOpen) => {
           if (!isOpen) setSendingReport(null);
           setIsSendDialogOpen(isOpen);
@@ -363,8 +370,23 @@ export default function AdminReportsPage() {
                         <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/> {report.title}</TableCell>
                         <TableCell>{report.createdAt?.toDate().toLocaleDateString('pt-BR') || '...'}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleOpenCreateDialog(report)}>Editar</Button>
-                          <Button size="sm" onClick={() => handleOpenSendDialog(report)}><Send className="mr-2 h-4 w-4"/>Enviar</Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                     <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4"/>Excluir</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>Esta ação excluirá permanentemente o rascunho do relatório. Deseja continuar?</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteReport(report.id)}>Sim, excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <Button variant="outline" size="sm" onClick={() => handleOpenCreateDialog(report)}>Editar</Button>
+                            <Button size="sm" onClick={() => handleOpenSendDialog(report)}><Send className="mr-2 h-4 w-4"/>Enviar</Button>
                         </TableCell>
                       </TableRow>
                     ))

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -229,6 +228,15 @@ export default function LeadsPage() {
     toast({ title: "Status do Currículo Atualizado" });
   };
   
+  const handleDeleteLead = async (leadId: string) => {
+    try {
+      await deleteDoc(doc(db, 'leads', leadId));
+      toast({ title: "Lead Excluído", description: "O lead foi removido com sucesso." });
+    } catch (error) {
+      toast({ title: "Erro ao Excluir", description: "Não foi possível remover o lead.", variant: "destructive" });
+    }
+  };
+
   const handleCurriculumDelete = async (curriculumId: string) => {
     await deleteDoc(doc(db, 'curriculums', curriculumId));
     toast({ title: "Currículo Excluído" });
@@ -420,6 +428,26 @@ export default function LeadsPage() {
                                                 <DropdownMenuItem onClick={() => { setSelectedLead(lead); setIsModalOpen(true);}}>
                                                     <Eye className="mr-2 h-4 w-4" /> Visualizar
                                                 </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <AlertDialog>
+                                                  <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-red-500 hover:bg-red-50 focus:bg-red-100 focus:text-red-600">
+                                                      <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                                    </DropdownMenuItem>
+                                                  </AlertDialogTrigger>
+                                                  <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                                      <AlertDialogDescription>Esta ação excluirá o lead permanentemente. Deseja continuar?</AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                      <AlertDialogAction onClick={() => handleDeleteLead(lead.id)} className="bg-destructive hover:bg-destructive/90">
+                                                        Sim, excluir
+                                                      </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                  </AlertDialogContent>
+                                                </AlertDialog>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </CardTitle>
