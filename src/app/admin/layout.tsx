@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
 const navItems = [
-    { href: "/admin", label: "Dashboard", notificationKey: null },
+    { href: "/admin", icon: Home, label: "Dashboard", notificationKey: null },
     { href: "/admin/analytics", icon: AreaChart, label: "Analytics", notificationKey: null },
     { href: "/admin/reports", icon: BarChart, label: "Relatórios", notificationKey: null },
     { href: "/admin/collaborators", icon: Briefcase, label: "Colaboradores", notificationKey: null },
