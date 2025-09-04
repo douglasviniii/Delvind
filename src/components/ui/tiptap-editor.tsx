@@ -3,8 +3,9 @@
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style'
+import TextAlign from '@tiptap/extension-text-align'
 import { Color } from '@tiptap/extension-color'
-import { Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, List, ListOrdered } from 'lucide-react';
+import { Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '../../lib/utils';
 import { useEffect } from 'react';
@@ -41,7 +42,7 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
         <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })}>
             <Heading1 className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })}>
+         <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })}>
             <Heading2 className="h-4 w-4" />
         </ToolbarButton>
          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })}>
@@ -53,6 +54,20 @@ const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
         <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')}>
             <ListOrdered className="h-4 w-4" />
         </ToolbarButton>
+
+        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('left').run()} isActive={editor.isActive({ textAlign: 'left' })}>
+            <AlignLeft className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('center').run()} isActive={editor.isActive({ textAlign: 'center' })}>
+            <AlignCenter className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })}>
+            <AlignRight className="h-4 w-4" />
+        </ToolbarButton>
+         <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('justify').run()} isActive={editor.isActive({ textAlign: 'justify' })}>
+            <AlignJustify className="h-4 w-4" />
+        </ToolbarButton>
+
        <div className="flex items-center gap-1">
          <input
             type="color"
@@ -76,7 +91,10 @@ const TiptapEditor = ({ value, onChange, editable = true }: { value: string; onC
         // Disable extensions as needed
       }),
       TextStyle,
-      Color
+      Color,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
     ],
     content: value,
     editable: editable,
