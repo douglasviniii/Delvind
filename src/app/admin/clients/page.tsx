@@ -587,7 +587,9 @@ export default function ClientsPage() {
                     <Skeleton className="h-48 w-full" />
                 </div>
             ) : customers.length > 0 ? (
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <>
+                {/* Mobile View - Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:hidden">
                     {customers.map((customer) => (
                         <Card key={customer.uid} className='flex flex-col'>
                             <CardHeader className="flex flex-row items-center gap-4">
@@ -612,6 +614,46 @@ export default function ClientsPage() {
                         </Card>
                     ))}
                 </div>
+
+                {/* Desktop View - Table */}
+                <div className="hidden md:block">
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nome / Razão Social</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Tipo</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {customers.map((customer) => (
+                                <TableRow key={customer.uid}>
+                                    <TableCell className="font-medium">
+                                        <div className='flex items-center gap-3'>
+                                            <Avatar className="w-9 h-9">
+                                                <AvatarImage src={customer.photoURL} alt={customer.displayName} />
+                                                <AvatarFallback>{customer.displayName?.[0].toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            {customer.displayName}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{customer.email}</TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{customer.cnpj ? 'P. Jurídica' : 'P. Física'}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="outline" size="sm" onClick={() => handleManageClick(customer)}>
+                                            <Eye className="mr-2 h-4 w-4" />
+                                            Gerenciar
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                </>
             ) : (
                 <div className="text-center h-24 flex items-center justify-center">
                     <p className="text-muted-foreground">Nenhum cliente encontrado.</p>
