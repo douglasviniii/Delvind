@@ -43,7 +43,7 @@ export default function CustomerDocumentsPage() {
     
     // Query for shared files
     const filesQuery = query(
-        collectionGroup(db, 'documents'), 
+        collection(db, 'documents'), 
         where('sharedWith', 'array-contains', user.uid)
     );
     const unsubscribeFiles = onSnapshot(filesQuery, (snapshot) => {
@@ -118,8 +118,7 @@ export default function CustomerDocumentsPage() {
       }
     } else {
        // Logic to mark regular documents as viewed
-       const docPath = `documents/${docToView.id}`;
-       const docRef = doc(db, docPath);
+       const docRef = doc(db, 'documents', docToView.id);
        const docSnap = await getDoc(docRef);
        if (docSnap.exists() && docSnap.data().viewedByClient === false) {
            await updateDoc(docRef, { viewedByClient: true });
@@ -127,7 +126,7 @@ export default function CustomerDocumentsPage() {
     }
   };
   
-  const sortedDocuments = documents.sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+  const sortedDocuments = documents.sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
   const formatDate = (timestamp: any) => timestamp?.toDate().toLocaleDateString('pt-BR') || '...';
 
