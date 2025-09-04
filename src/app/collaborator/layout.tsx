@@ -189,7 +189,7 @@ function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) 
                     <Sheet>
                         <SheetTrigger asChild>
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="icon"
                                 className="shrink-0 md:hidden"
                             >
@@ -224,7 +224,7 @@ function CollaboratorLayoutContent({ children }: { children: React.ReactNode }) 
                     </div>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <Settings className="h-4 w-4" />
                                 <span className="sr-only">Configurações</span>
                             </Button>

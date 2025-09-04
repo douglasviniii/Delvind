@@ -160,7 +160,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                     <Sheet>
                         <SheetTrigger asChild>
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="icon"
                                 className="shrink-0 lg:hidden"
                             >

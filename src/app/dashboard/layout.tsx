@@ -184,7 +184,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         <header className="flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6 shrink-0 sticky top-0 z-40">
           <Sheet>
               <SheetTrigger asChild>
-                  <Button variant="outline" size="icon" className="lg:hidden">
+                  <Button variant="ghost" size="icon" className="lg:hidden">
                       <Menu className="h-5 w-5" />
                       <span className="sr-only">Abrir menu</span>
                   </Button>
