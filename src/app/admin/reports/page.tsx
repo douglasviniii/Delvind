@@ -371,6 +371,7 @@ export default function AdminReportsPage() {
                         <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/> {report.title}</TableCell>
                         <TableCell>{report.createdAt?.toDate().toLocaleDateString('pt-BR') || '...'}</TableCell>
                         <TableCell className="text-right space-x-2">
+                            <Button variant="secondary" size="sm" onClick={() => handleDownloadPdf(report)}><Download className="mr-2 h-4 w-4"/>Baixar PDF</Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                      <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4"/>Excluir</Button>
