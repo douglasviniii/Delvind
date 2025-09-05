@@ -24,7 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 const blogSchema = z.object({
   title: z.string().min(3, 'O título é obrigatório.'),
-  excerpt: z.string().min(10, 'O resumo é muito curto.').max(200, 'O resumo deve ter no máximo 200 caracteres.'),
+  excerpt: z.string().min(10, 'O resumo é muito curto.').max(500, 'O resumo deve ter no máximo 500 caracteres.'),
   content: z.string().min(50, 'O conteúdo do post é muito curto.'),
   imageUrl: z.string().url('A URL da imagem de capa é obrigatória.'),
 });
