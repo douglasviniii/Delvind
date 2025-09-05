@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Badge } from '../../../components/ui/badge';
 import { Skeleton } from '../../../components/ui/skeleton';
-import { PlusCircle, DollarSign, FileCheck, CalendarIcon, Link2, CheckCircle, HandCoins, Send, Eye, ArrowDownUp, FileWarning, XCircle, Receipt } from 'lucide-react';
+import { PlusCircle, DollarSign, FileCheck, CalendarIcon, Link2, CheckCircle, HandCoins, Send, Eye, ArrowDownUp, FileWarning, XCircle, Receipt, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -281,6 +281,42 @@ export default function FinanceiroPage() {
     setIsDetailModalOpen(true);
   }
 
+  const sendReceiptEmail = async (receipt: any) => {
+    const clientRef = doc(db, 'users', receipt.clientId);
+    const clientSnap = await getDoc(clientRef);
+    if (!clientSnap.exists() || !clientSnap.data().email) {
+        toast({ title: "Cliente sem e-mail", description: "Não foi possível enviar o recibo pois o cliente não possui e-mail cadastrado.", variant: "destructive" });
+        return;
+    }
+    const clientEmail = clientSnap.data().email;
+
+    const emailContent = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h1 style="color: #6d28d9;">Recibo de Pagamento - Delvind</h1>
+            <p>Olá, ${receipt.clientName},</p>
+            <p>Confirmamos o recebimento do seu pagamento referente a <strong>${receipt.title}</strong>.</p>
+            <hr>
+            <h3>Detalhes do Pagamento</h3>
+            <p><strong>Valor Total Pago:</strong> ${formatCurrency(receipt.totalAmount)}</p>
+            <p><strong>Data do Pagamento:</strong> ${formatDate(receipt.paidAt)}</p>
+            <p><strong>ID do Recibo:</strong> ${receipt.id.slice(0, 8).toUpperCase()}</p>
+            <hr>
+            <p>Agradecemos pela sua confiança!</p>
+            <p>Atenciosamente,<br>Equipe Delvind</p>
+        </div>
+    `;
+
+    await addDoc(collection(db, 'mail'), {
+        to: clientEmail,
+        message: {
+            subject: `Seu Recibo de Pagamento - ${receipt.title}`,
+            html: emailContent,
+        },
+    });
+
+    toast({ title: "Recibo enviado!", description: `O recibo foi enviado para o e-mail ${clientEmail}.`});
+  };
+
   const handlePaymentAction = async (record: FinancialRecord, action: 'confirm' | 'reject') => {
     if (!record) return;
     try {
@@ -303,7 +339,9 @@ export default function FinanceiroPage() {
 
             await updateDoc(recordRef, { status: 'Recebido' });
             
-            await addDoc(collection(db, 'receipts'), {
+            const newReceiptRef = doc(collection(db, 'receipts'));
+            const newReceipt = {
+                id: newReceiptRef.id,
                 clientId: record.clientId,
                 clientName: record.clientName,
                 financeRecordId: record.id,
@@ -314,9 +352,12 @@ export default function FinanceiroPage() {
                 paidAt: serverTimestamp(),
                 originalBudgetId: record.originalBudgetId || null,
                 viewedByClient: false,
-            });
+            };
 
-            toast({ title: 'Pagamento Confirmado!', description: 'O registro foi movido para "Recebido" e o comprovante foi gerado.' });
+            await setDoc(newReceiptRef, newReceipt);
+            await sendReceiptEmail(newReceipt); // Send email automatically
+
+            toast({ title: 'Pagamento Confirmado!', description: 'O registro foi movido para "Recebido" e o comprovante foi gerado e enviado.' });
         } else {
             await updateDoc(recordRef, { status: 'Cobrança Enviada' });
             toast({ title: 'Pagamento Rejeitado', description: 'O registro voltou para "Cobrança Enviada" e o cliente será notificado.' });
@@ -863,7 +904,8 @@ export default function FinanceiroPage() {
 
 
     <main className="flex-1 p-4 sm:p-6">
-      <div className="flex items-center justify-end mb-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Painel Financeiro</h1>
          <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setIsSaidaModalOpen(true)}>
                 <ArrowDownUp className="mr-2 h-4 w-4" />

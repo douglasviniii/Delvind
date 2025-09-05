@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Badge } from '../../../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
-import { CheckCircle, XCircle, MessageSquare, Archive, Search, Receipt, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, MessageSquare, Archive, Search, Receipt, Eye, Mail } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../components/ui/dialog';
-import { collection, onSnapshot, query, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, getDocs, updateDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { Skeleton } from '../../../components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,7 @@ type ReceiptData = {
   id: string;
   title: string;
   clientName: string;
+  clientId: string;
   totalAmount: number;
   paidAt: any;
 };
@@ -73,7 +74,7 @@ export default function RequestsPage() {
     });
 
     setLoadingReceipts(true);
-    const receiptsQuery = query(collection(db, 'receipts'));
+    const receiptsQuery = query(collection(db, 'receipts'), orderBy('paidAt', 'desc'));
     const unsubscribeReceipts = onSnapshot(receiptsQuery, async (snapshot) => {
       const receiptsData = await Promise.all(snapshot.docs.map(async (doc) => {
           const data = doc.data();
@@ -143,16 +144,52 @@ export default function RequestsPage() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
 
+  const formatDate = (timestamp: any) => {
+    if (timestamp && timestamp.toDate) {
+      return timestamp.toDate().toLocaleDateString('pt-BR');
+    }
+    return 'Data inválida';
+  }
+
+  const handleSendReceiptEmail = async (receipt: ReceiptData) => {
+    const clientRef = doc(db, 'users', receipt.clientId);
+    const clientSnap = await getDoc(clientRef);
+    if (!clientSnap.exists() || !clientSnap.data().email) {
+        toast({ title: "Cliente sem e-mail", description: "Não foi possível enviar o recibo pois o cliente não possui e-mail cadastrado.", variant: "destructive" });
+        return;
+    }
+    const clientEmail = clientSnap.data().email;
+
+    const emailContent = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h1 style="color: #6d28d9;">Recibo de Pagamento - Delvind</h1>
+            <p>Olá, ${receipt.clientName},</p>
+            <p>Confirmamos o recebimento do seu pagamento referente a <strong>${receipt.title}</strong>.</p>
+            <hr>
+            <h3>Detalhes do Pagamento</h3>
+            <p><strong>Valor Total Pago:</strong> ${formatCurrency(receipt.totalAmount)}</p>
+            <p><strong>Data do Pagamento:</strong> ${formatDate(receipt.paidAt)}</p>
+            <p><strong>ID do Recibo:</strong> ${receipt.id.slice(0, 8).toUpperCase()}</p>
+            <hr>
+            <p>Agradecemos pela sua confiança!</p>
+            <p>Atenciosamente,<br>Equipe Delvind</p>
+        </div>
+    `;
+
+    await addDoc(collection(db, 'mail'), {
+        to: clientEmail,
+        message: {
+            subject: `Seu Recibo de Pagamento - ${receipt.title}`,
+            html: emailContent,
+        },
+    });
+
+    toast({ title: "E-mail na fila!", description: `O recibo será enviado em breve para ${clientEmail}.`});
+  };
+
 
   return (
-    <main className="flex-1 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Pedidos e Revisão</h1>
-          <p className="text-muted-foreground">Gerencie as solicitações de cancelamento, reembolso e consulte os recibos.</p>
-        </div>
-      </div>
-
+    <main className="flex-1 space-y-6">
       <Tabs defaultValue="pedidos" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
@@ -265,10 +302,13 @@ export default function RequestsPage() {
                                         <TableCell>{receipt.clientName}</TableCell>
                                         <TableCell>{receipt.title}</TableCell>
                                         <TableCell>{formatCurrency(receipt.totalAmount)}</TableCell>
-                                        <TableCell>{receipt.paidAt?.toDate().toLocaleDateString('pt-BR')}</TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell>{formatDate(receipt.paidAt)}</TableCell>
+                                        <TableCell className="text-right space-x-2">
                                             <Button variant="outline" size="sm" onClick={() => router.push(`/admin/receipts/${receipt.id}`)}>
                                                 <Eye className="mr-2 h-4 w-4" /> Visualizar
+                                            </Button>
+                                             <Button variant="secondary" size="sm" onClick={() => handleSendReceiptEmail(receipt)}>
+                                                <Mail className="mr-2 h-4 w-4" /> Enviar por E-mail
                                             </Button>
                                         </TableCell>
                                     </TableRow>
