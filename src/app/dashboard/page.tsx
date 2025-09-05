@@ -13,25 +13,25 @@ const services = [
     title: "Websites Profissionais",
     description: "Criamos sites profissionais e otimizados para converter visitantes em clientes.",
     icon: <Globe className="w-8 h-8 text-primary" />,
-    link: "/contact"
+    link: "https://wa.me/5545988000647"
   },
   {
     title: "Otimização para Buscas (SEO)",
     description: "Posicionamos sua marca no topo das buscas do Google para atrair tráfego qualificado.",
     icon: <Search className="w-8 h-8 text-primary" />,
-    link: "/contact"
+    link: "https://wa.me/5545988000647"
   },
   {
     title: "Aplicativos Personalizados",
     description: "Desenvolvemos aplicativos móveis intuitivos que fortalecem o relacionamento com seus clientes.",
     icon: <Smartphone className="w-8 h-8 text-primary" />,
-    link: "/contact"
+    link: "https://wa.me/5545988000647"
   },
   {
     title: "Posicionamento de Marca Digital",
     description: "Gerenciamos suas redes sociais e tráfego pago para construir uma presença online forte.",
     icon: <TrendingUp className="w-8 h-8 text-primary" />,
-    link: "/contact"
+    link: "https://wa.me/5545988000647"
   }
 ];
 
@@ -65,7 +65,7 @@ export default function DashboardPage() {
               </CardContent>
               <CardContent>
                 <Button asChild className="w-full">
-                  <Link href={service.link}>
+                  <Link href={service.link} target="_blank" rel="noopener noreferrer">
                     Solicitar Orçamento <ArrowRight className="ml-2 w-4 h-4" />
                   </Link>
                 </Button>
