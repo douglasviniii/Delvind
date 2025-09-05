@@ -78,7 +78,7 @@ export default function DashboardPage() {
       )}
       
       <div className='space-y-16'>
-        {/* Nova Seção de Serviços */}
+        {/* Seção de Serviços Refatorada */}
         <section>
             <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Nossos Serviços</h2>
