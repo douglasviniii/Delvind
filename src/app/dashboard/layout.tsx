@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from "../../components/ui/button";
-import { Home, User, Settings, LifeBuoy, LogOut, Menu, PenSquare, DollarSign, Bell, Package, MessageSquare, FileSignature, Receipt, Sun, Moon, Calendar, FileText, Rss } from "lucide-react";
+import { Home, User, Settings, LifeBuoy, LogOut, Menu, PenSquare, DollarSign, Bell, Package, MessageSquare, FileSignature, Receipt, Sun, Moon, Calendar, FileText, Rss, Briefcase } from "lucide-react";
 import Link from 'next/link';
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth, ProtectedRoute } from "../../context/auth-context";
@@ -42,6 +42,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/dashboard", label: "Explore", icon: Home, notificationKey: null },
+    { href: "/dashboard/services", label: "Nossos Serviços", icon: Briefcase, notificationKey: null },
     { href: "/dashboard/schedule", label: "Agendamentos", icon: Calendar, notificationKey: null },
     { href: "/dashboard/budgets", label: "Meus Orçamentos", icon: PenSquare, notificationKey: 'budgets' },
     { href: "/dashboard/contracts", label: "Meus Contratos", icon: FileSignature, notificationKey: 'contracts' },
