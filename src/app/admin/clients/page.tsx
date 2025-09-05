@@ -346,17 +346,11 @@ export default function ClientsPage() {
   const handlePayInstallmentEarly = async (installment: FinancialRecord) => {
     if (!selectedCustomer) return;
     try {
-        await addDoc(collection(db, 'finance'), {
-            clientId: installment.clientId,
-            clientName: installment.clientName,
-            title: `Adiantamento - ${installment.title}`,
-            totalAmount: installment.totalAmount,
+        const installmentRef = doc(db, 'finance', installment.id);
+        await updateDoc(installmentRef, {
             status: 'A Cobrar',
             dueDate: serverTimestamp(),
-            entryType: 'manual', 
-            originalBudgetId: installment.originalBudgetId,
-            advancedInstallmentId: installment.id,
-            createdAt: serverTimestamp(),
+            title: `Adiantamento - ${installment.title}`,
         });
         toast({ title: 'Adiantamento Gerado!', description: 'A cobrança da parcela foi movida para "A Cobrar" no painel financeiro.' });
         setIsInstallmentsModalOpen(false);
