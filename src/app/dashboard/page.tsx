@@ -1,61 +1,79 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useAuth } from "../../context/auth-context";
-import { db } from "../../lib/firebase";
-import { doc, getDoc } from 'firebase/firestore';
-import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert';
-import { AlertCircle, ArrowRight, Globe, Search, Smartphone, TrendingUp } from 'lucide-react';
-import { PortfolioCarousel } from '../../components/layout/portfolio-carousel';
-import { BlogCarousel } from '../../components/layout/blog-carousel';
-import { PartnersCarousel } from '../../components/layout/partners-carousel';
-import { Separator } from '../../components/ui/separator';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Globe, Search, Smartphone, TrendingUp, ArrowRight } from 'lucide-react';
+import { motion } from "framer-motion";
+
+const services = [
+  {
+    title: "Websites Profissionais",
+    description: "Criamos sites profissionais e otimizados para converter visitantes em clientes.",
+    icon: <Globe className="w-8 h-8 text-primary" />,
+    link: "/contact"
+  },
+  {
+    title: "Otimização para Buscas (SEO)",
+    description: "Posicionamos sua marca no topo das buscas do Google para atrair tráfego qualificado.",
+    icon: <Search className="w-8 h-8 text-primary" />,
+    link: "/contact"
+  },
+  {
+    title: "Aplicativos Personalizados",
+    description: "Desenvolvemos aplicativos móveis intuitivos que fortalecem o relacionamento com seus clientes.",
+    icon: <Smartphone className="w-8 h-8 text-primary" />,
+    link: "/contact"
+  },
+  {
+    title: "Posicionamento de Marca Digital",
+    description: "Gerenciamos suas redes sociais e tráfego pago para construir uma presença online forte.",
+    icon: <TrendingUp className="w-8 h-8 text-primary" />,
+    link: "/contact"
+  }
+];
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-        const checkProfile = async () => {
-            const userDocRef = doc(db, 'users', user.uid);
-            const docSnap = await getDoc(userDocRef);
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (!data.phone) {
-                    setProfileIncomplete(true);
-                }
-            } else {
-                setProfileIncomplete(true);
-            }
-        }
-        checkProfile();
-    }
-  }, [user]);
-
   return (
-    <>
-      {profileIncomplete && (
-        <Alert className="mb-6 bg-card border-primary">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Pendências no seu perfil!</AlertTitle>
-          <AlertDescription>
-            Seu perfil está incompleto. Por favor, <Link href="/dashboard/profile" className="font-bold hover:underline">clique aqui</Link> para preencher seus dados e aproveitar todos os nossos recursos.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <div className='space-y-16'>
-        <PortfolioCarousel />
-        <Separator />
-        <BlogCarousel />
-        <Separator />
-        <PartnersCarousel />
+    <section>
+      <div className="text-center mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold font-headline">Explore Nossos Serviços</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mt-4">
+          Descubra como nossas soluções podem impulsionar sua presença digital.
+        </p>
       </div>
-    </>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-8">
+        {services.map((service, index) => (
+          <motion.div
+            key={service.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+          >
+            <Card className="flex flex-col h-full bg-card/60 backdrop-blur-sm hover:border-primary/50 transition-all duration-300 shadow-lg">
+              <CardHeader className="flex-row items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-full">
+                  {service.icon}
+                </div>
+                <CardTitle className="text-xl">{service.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <CardDescription>{service.description}</CardDescription>
+              </CardContent>
+              <CardContent>
+                <Button asChild className="w-full">
+                  <Link href={service.link}>
+                    Solicitar Orçamento <ArrowRight className="ml-2 w-4 h-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </section>
   );
 }
