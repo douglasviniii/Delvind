@@ -7,7 +7,7 @@ import { useAuth, ProtectedRoute } from "../../context/auth-context";
 import { auth, db } from "../../lib/firebase";
 import { useToast } from "../../hooks/use-toast";
 import { signOut } from "firebase/auth";
-import { Bell, BarChart, Users, GanttChartSquare, MessageSquare, Settings, User, DollarSign, PenSquare, Newspaper, LogOut, Home, Menu, Search, Briefcase, Archive, Mail, LayoutTemplate, Handshake, FileSignature, Folder, AreaChart } from "lucide-react";
+import { Bell, BarChart, Users, GanttChartSquare, MessageSquare, Settings, User, DollarSign, PenSquare, Newspaper, LogOut, Home, Menu, Search, Briefcase, Archive, Mail, LayoutTemplate, Handshake, FileSignature, Folder, AreaChart, Store } from "lucide-react";
 import Link from 'next/link';
 import { usePathname, useRouter } from "next/navigation";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "../../components/ui/sheet";
@@ -23,6 +23,7 @@ const navItems = [
     { href: "/admin", icon: Home, label: "Dashboard", notificationKey: null },
     { href: "/admin/analytics", icon: AreaChart, label: "Analytics", notificationKey: null },
     { href: "/admin/reports", icon: BarChart, label: "Relatórios", notificationKey: null },
+    { href: "/admin/loja", icon: Store, label: "Loja", notificationKey: null },
     { href: "/admin/collaborators", icon: Briefcase, label: "Colaboradores", notificationKey: null },
     { href: "/admin/tasks", icon: GanttChartSquare, label: "Tarefas e Agenda", notificationKey: 'tasks' },
     { href: "/admin/clients", icon: Users, label: "Clientes", notificationKey: null },
@@ -35,7 +36,7 @@ const navItems = [
     { href: "/admin/partners", icon: Handshake, label: "Parceiros", notificationKey: null },
     { href: "/admin/financeiro", icon: DollarSign, label: "Financeiro", notificationKey: 'finance' },
     { href: "/admin/requests", icon: Archive, label: "Pedidos e Revisão", notificationKey: 'requests' },
-    { href: "/collaborator/chat", icon: MessageSquare, label: "Chat", notificationKey: 'chat' },
+    { href: "/admin/chat", icon: MessageSquare, label: "Chat", notificationKey: 'chat' },
     { href: "/admin/settings", icon: Settings, label: "Configuração", notificationKey: null },
 ];
 
@@ -97,7 +98,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             if (item.href === "/admin") {
                 return pathname === "/admin";
             }
-            if (item.href === "/collaborator/chat") {
+            if (item.href === "/admin/chat") {
                 return pathname.startsWith(item.href);
             }
             return pathname.startsWith(item.href);
@@ -121,7 +122,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                                 "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
                                 pathname.startsWith(item.href) && item.href !== "/admin" && "bg-muted text-primary",
                                 pathname === "/admin" && item.href === "/admin" && "bg-muted text-primary",
-                                item.label === 'Chat' && pathname.startsWith('/collaborator/chat') && "bg-muted text-primary" // Special case for chat
+                                item.label === 'Chat' && pathname.startsWith('/admin/chat') && "bg-muted text-primary" // Special case for chat
                             )}
                         >
                             <div className="flex items-center gap-3">
@@ -157,7 +158,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
        </div>
     );
     
-    const isChatPage = pathname === '/admin/chat' || pathname === '/collaborator/chat';
+    const isChatPage = pathname === '/admin/chat';
 
     return (
         <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
