@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       payment_method_types: ['card', 'boleto'],
       line_items,
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/loja?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/loja/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/loja/cart`,
       shipping_address_collection: {
         allowed_countries: ['BR'],
