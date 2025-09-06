@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { useCart } from '@/context/cart-context';
 
 type Product = {
   id: string;
@@ -37,6 +38,7 @@ export function PublicStore() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     setLoading(true);
@@ -48,7 +50,7 @@ export function PublicStore() {
 
     const categoriesQuery = query(collection(db, 'store_categories'), orderBy('name', 'asc'));
     const unsubscribeCategories = onSnapshot(categoriesQuery, (snapshot) => {
-        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as Category)));
     });
 
     return () => {
@@ -106,7 +108,7 @@ export function PublicStore() {
                 )}
             </CardContent>
             <CardFooter>
-            <Button className="w-full" disabled={product.stock === 0}>
+            <Button className="w-full" disabled={product.stock === 0} onClick={() => addToCart(product)}>
               <ShoppingCart className="mr-2 h-4 w-4" />
               Adicionar ao Carrinho
             </Button>

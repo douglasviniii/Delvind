@@ -5,14 +5,19 @@ import { Header } from '@/components/layout/header';
 import { FooterSection } from '@/components/layout/footer-section';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
+import { useCart } from '@/context/cart-context';
+import Image from 'next/image';
+import { Input } from '@/components/ui/input';
 
 export default function CartPage() {
-  // Por enquanto, o carrinho está vazio. A lógica será adicionada depois.
-  const items: any[] = [];
-  const total = 0;
+  const { cartItems, removeFromCart, updateQuantity, total } = useCart();
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -29,9 +34,29 @@ export default function CartPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {items.length > 0 ? (
-                            <div>
-                                {/* A lógica para listar os itens do carrinho virá aqui */}
+                        {cartItems.length > 0 ? (
+                            <div className='space-y-4'>
+                                {cartItems.map(item => (
+                                    <div key={item.id} className="flex items-center gap-4 border-b pb-4">
+                                        <Image src={item.imageUrl} alt={item.name} width={80} height={80} className="rounded-md object-cover"/>
+                                        <div className='flex-1'>
+                                            <h4 className='font-semibold'>{item.name}</h4>
+                                            <p className='text-sm text-primary'>{formatCurrency(item.promoPrice || item.price)}</p>
+                                        </div>
+                                        <div className='flex items-center gap-2'>
+                                            <Input 
+                                                type="number" 
+                                                min="1"
+                                                value={item.quantity}
+                                                onChange={(e) => updateQuantity(item.id, parseInt(e.target.value))}
+                                                className="w-16 text-center"
+                                            />
+                                            <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.id)}>
+                                                <Trash2 className="w-4 h-4 text-destructive"/>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
                             <div className="text-center py-16 border-2 border-dashed rounded-lg">
@@ -45,14 +70,12 @@ export default function CartPage() {
                             </div>
                         )}
                     </CardContent>
-                    {items.length > 0 && (
+                    {cartItems.length > 0 && (
                         <CardFooter className='flex-col items-stretch space-y-4'>
                             <Separator />
                             <div className='flex justify-between font-bold text-lg'>
                                 <span>Total</span>
-                                <span>
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
-                                </span>
+                                <span>{formatCurrency(total)}</span>
                             </div>
                             <Button size="lg" className="w-full">
                                 Finalizar Compra
