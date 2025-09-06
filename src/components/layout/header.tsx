@@ -105,7 +105,7 @@ export function Header() {
             <SocialIcons className="hidden md:flex items-center space-x-2"/>
             <Button variant="ghost" size="icon" asChild>
               <Link href="/loja/cart">
-                <ShoppingCart className="h-5 w-5" />
+                <ShoppingCart className="h-6 w-6 text-primary" />
                 <span className="sr-only">Carrinho</span>
               </Link>
             </Button>
