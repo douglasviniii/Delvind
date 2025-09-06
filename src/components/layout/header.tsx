@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Instagram, Twitter } from 'lucide-react';
+import { Menu, Instagram, Twitter, ShoppingCart } from 'lucide-react';
 
 import { Button } from '../ui/button';
 import {
@@ -103,6 +103,12 @@ export function Header() {
 
         <div className="flex flex-1 items-center justify-end space-x-2">
             <SocialIcons className="hidden md:flex items-center space-x-2"/>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/loja/cart">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="sr-only">Carrinho</span>
+              </Link>
+            </Button>
             <Link href="/login">
               <Button>Login</Button>
             </Link>

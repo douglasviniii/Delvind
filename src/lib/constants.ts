@@ -4,6 +4,7 @@ export const NAV_LINKS = [
   { name: 'Quem Somos', href: '/about' },
   { name: 'Portfólio', href: '/portfolio' },
   { name: 'Blog', href: '/blog' },
+  { name: 'Loja', href: '/loja'},
   { name: 'Contato', href: '/contact' },
 ];
 
