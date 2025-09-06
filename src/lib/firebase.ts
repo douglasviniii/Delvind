@@ -6,16 +6,16 @@ import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// Configuração do Firebase (copiada do console)
+// Configuração do Firebase usando variáveis de ambiente
 const firebaseConfig = {
-  apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
-  authDomain: "venda-fcil-pdv.firebaseapp.com",
-  projectId: "venda-fcil-pdv",
-  storageBucket: "venda-fcil-pdv.firebasestorage.app",
-  messagingSenderId: "114570788878",
-  appId: "1:114570788878:web:1e3fa51754f3ae6862fc5f",
-  measurementId: "G-792KHTQP7R",
-  databaseURL: "https://venda-fcil-pdv.firebaseio.com"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
 // Inicializa o Firebase (garante que só inicializa uma vez)

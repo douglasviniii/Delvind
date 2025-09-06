@@ -3,14 +3,16 @@
 
 import { Header } from '@/components/layout/header';
 import { FooterSection } from '@/components/layout/footer-section';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
+import { Separator } from '@/components/ui/separator';
 
 export default function CartPage() {
   // Por enquanto, o carrinho está vazio. A lógica será adicionada depois.
-  const items = [];
+  const items: any[] = [];
+  const total = 0;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -43,6 +45,20 @@ export default function CartPage() {
                             </div>
                         )}
                     </CardContent>
+                    {items.length > 0 && (
+                        <CardFooter className='flex-col items-stretch space-y-4'>
+                            <Separator />
+                            <div className='flex justify-between font-bold text-lg'>
+                                <span>Total</span>
+                                <span>
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
+                                </span>
+                            </div>
+                            <Button size="lg" className="w-full">
+                                Finalizar Compra
+                            </Button>
+                        </CardFooter>
+                    )}
                 </Card>
              </div>
         </div>
