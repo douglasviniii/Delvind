@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
@@ -43,7 +44,8 @@ export async function POST(req: Request) {
         products: lineItems.map(item => {
             const product = item.price?.product as Stripe.Product;
             return {
-                productId: product.id,
+                // IMPORTANT: The Stripe product ID is stored in our Firestore product doc `id`.
+                productId: product.id, 
                 name: product.name,
                 images: product.images,
                 quantity: item.quantity,
@@ -54,6 +56,19 @@ export async function POST(req: Request) {
 
       // Save order to Firestore
       await db.collection('orders').add(orderData);
+      
+      // Update product stock
+      const batch = db.batch();
+      for (const item of orderData.products) {
+          if (item.productId) {
+            const productRef = db.collection('store_products').doc(item.productId);
+            batch.update(productRef, {
+                stock: admin.firestore.FieldValue.increment(-(item.quantity || 0))
+            });
+          }
+      }
+      await batch.commit();
+
 
     } catch (error) {
         console.error('Error handling checkout session:', error);
