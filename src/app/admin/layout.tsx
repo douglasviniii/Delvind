@@ -23,7 +23,7 @@ const navItems = [
     { href: "/admin", icon: Home, label: "Dashboard", notificationKey: null },
     { href: "/admin/analytics", icon: AreaChart, label: "Analytics", notificationKey: null },
     { href: "/admin/reports", icon: BarChart, label: "Relatórios", notificationKey: null },
-    { href: "/admin/loja", icon: Store, label: "Loja", notificationKey: null },
+    { href: "/admin/store", icon: Store, label: "Loja", notificationKey: null },
     { href: "/admin/collaborators", icon: Briefcase, label: "Colaboradores", notificationKey: null },
     { href: "/admin/tasks", icon: GanttChartSquare, label: "Tarefas e Agenda", notificationKey: 'tasks' },
     { href: "/admin/clients", icon: Users, label: "Clientes", notificationKey: null },
