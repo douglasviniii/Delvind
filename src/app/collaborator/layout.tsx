@@ -7,7 +7,7 @@ import { useAuth, ProtectedRoute } from "../../context/auth-context";
 import { auth, db } from "../../lib/firebase";
 import { useToast } from "../../hooks/use-toast";
 import { signOut } from "firebase/auth";
-import { Bell, BarChart, Settings, GanttChartSquare, LogOut, Home, Menu, MessageSquare, Newspaper, User, FileSignature, Receipt, Inbox, Rss } from "lucide-react";
+import { Bell, BarChart, Settings, GanttChartSquare, LogOut, Home, Menu, MessageSquare, Newspaper, User, FileSignature, Receipt, Inbox, Rss, Store } from "lucide-react";
 import Link from 'next/link';
 import { usePathname, useRouter } from "next/navigation";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "../../components/ui/sheet";
@@ -27,6 +27,7 @@ const navItems = [
     { href: "/collaborator/feed-blog", icon: Rss, label: "Feed Blog", notificationKey: null },
     { href: "/collaborator/contracts", icon: FileSignature, label: "Meus Contratos", notificationKey: 'contracts' },
     { href: "/collaborator/receipts", icon: Receipt, label: "Meus Recibos", notificationKey: 'receipts' },
+    { href: "/collaborator/loja", icon: Store, label: "Loja", notificationKey: null },
     { href: "/collaborator/chat", icon: MessageSquare, label: "Chat", notificationKey: null },
 ];
 

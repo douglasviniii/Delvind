@@ -6,11 +6,20 @@ import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// Configuração do Firebase é descoberta automaticamente pelo SDK no App Hosting.
-// Nenhuma configuração manual é necessária.
+// Configuração do Firebase fornecida pelo usuário
+const firebaseConfig = {
+  apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
+  authDomain: "venda-fcil-pdv.firebaseapp.com",
+  projectId: "venda-fcil-pdv",
+  storageBucket: "venda-fcil-pdv.firebasestorage.app",
+  messagingSenderId: "114570788878",
+  appId: "1:114570788878:web:1e3fa51754f3ae6862fc5f",
+  measurementId: "G-792KHTQP7R"
+};
+
 
 // Inicializa o Firebase (garante que só inicializa uma vez)
-const app = !getApps().length ? initializeApp({}) : getApp();
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Firestore com cache ilimitado
 const db = initializeFirestore(app, {
