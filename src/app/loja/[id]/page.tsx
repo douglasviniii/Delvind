@@ -11,7 +11,7 @@ import { FooterSection } from '@/components/layout/footer-section';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, ShoppingCart, Share2, Shield, Truck, Star, Upload } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ShoppingCart, Share2, Shield, Truck, Star, Upload, Loader2 } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -72,7 +72,6 @@ const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
-// Component to track and display offers
 const SmartOffer = ({ product }: { product: Product }) => {
     const [visitCount, setVisitCount] = useState(0);
     const [showOffer, setShowOffer] = useState(false);
@@ -222,6 +221,62 @@ const ReviewForm = ({ productId }: { productId: string }) => {
     );
 };
 
+const ProductShippingCalculator = ({ product }: { product: Product }) => {
+    const [cep, setCep] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [shippingResult, setShippingResult] = useState<{ cost: string; time: string } | null>(null);
+
+    const handleCalculate = () => {
+        if (!cep.trim() || cep.replace(/\D/g, '').length !== 8) {
+            alert('Por favor, insira um CEP válido.');
+            return;
+        }
+        setLoading(true);
+        setShippingResult(null);
+
+        // Simulação de chamada de API de frete
+        setTimeout(() => {
+            const productPrice = product.promoPrice || product.price;
+            const shippingCost = productPrice * 0.05 + 5; // 5% do preço do produto + 5 reais fixo
+            const deliveryTime = Math.floor(Math.random() * 5) + 3; // 3 a 7 dias
+
+            setShippingResult({
+                cost: formatCurrency(shippingCost),
+                time: `${deliveryTime} dias úteis`
+            });
+            setLoading(false);
+        }, 1000);
+    };
+
+    if (!product.requiresShipping) {
+        return null;
+    }
+
+    return (
+        <div className="mt-6 pt-6 border-t">
+            <h3 className="font-semibold text-lg mb-2">Calcular Frete</h3>
+            <div className="flex gap-2">
+                <Input
+                    placeholder="Digite seu CEP"
+                    value={cep}
+                    onChange={(e) => setCep(e.target.value)}
+                />
+                <Button onClick={handleCalculate} disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Calcular"}
+                </Button>
+            </div>
+            {shippingResult && (
+                <Card className="mt-4 bg-muted/50">
+                    <CardContent className="p-4 text-sm space-y-1">
+                        <p><strong>Custo do Frete:</strong> {shippingResult.cost}</p>
+                        <p><strong>Prazo Estimado:</strong> {shippingResult.time}</p>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
+};
+
 
 export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
@@ -338,6 +393,8 @@ export default function ProductDetailPage() {
                                 </div>
                             </div>
                         </div>
+                        
+                        <ProductShippingCalculator product={product} />
 
                          <div className='space-y-4 pt-4 border-t'>
                             <h3 className='font-semibold text-lg'>Descrição do Produto</h3>
