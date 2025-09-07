@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase-admin-init';
 import * as admin from 'firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         shippingDetails: session.shipping_details,
         paymentStatus: session.payment_status,
         status: 'Pendente', // Initial order status
-        createdAt: new Date(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         products: lineItems.map(item => {
             const product = item.price?.product as Stripe.Product;
             return {
