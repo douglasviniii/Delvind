@@ -6,7 +6,7 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'darkgreen-lark-741030.hostingersite.com',
                 port: '',
-                pathname: '/img/**',
+                pathname: '/**',
             },
             {
                 protocol: 'https',
@@ -14,6 +14,12 @@ const nextConfig = {
                 port: '',
                 pathname: '/**',
             },
+            {
+                protocol: 'https',
+                hostname: 'lh3.googleusercontent.com',
+                port: '',
+                pathname: '/**',
+            }
         ],
     },
 };
