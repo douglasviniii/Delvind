@@ -3,14 +3,15 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { db, auth, storage } from '@/lib/firebase';
+import { doc, getDoc, collection, addDoc, serverTimestamp, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Header } from '@/components/layout/header';
 import { FooterSection } from '@/components/layout/footer-section';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, ShoppingCart, Share2, Shield, Truck } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ShoppingCart, Share2, Shield, Truck, Star, Upload } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -18,7 +19,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -31,6 +32,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { Textarea } from '@/components/ui/textarea';
+import ReactStars from 'react-rating-stars-component';
 
 
 type Product = {
@@ -45,6 +51,17 @@ type Product = {
   description: string;
   categoryId: string;
   requiresShipping?: boolean;
+};
+
+type Review = {
+    id: string;
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+    rating: number;
+    comment: string;
+    photos: string[];
+    createdAt: any;
 };
 
 const formatCurrency = (value: number) => {
@@ -103,9 +120,108 @@ const SmartOffer = ({ product }: { product: Product }) => {
     );
 };
 
+const ReviewForm = ({ productId }: { productId: string }) => {
+    const [user] = useAuthState(auth);
+    const { toast } = useToast();
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [photos, setPhotos] = useState<File[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            setPhotos(Array.from(e.target.files));
+        }
+    };
+
+    const handleSubmit = async () => {
+        if (!user) {
+            toast({ title: 'Ação Requerida', description: 'Você precisa estar logado para avaliar.', variant: 'destructive' });
+            return;
+        }
+        if (rating === 0) {
+            toast({ title: 'Avaliação Incompleta', description: 'Por favor, selecione uma nota.', variant: 'destructive' });
+            return;
+        }
+        if (!comment.trim()) {
+            toast({ title: 'Avaliação Incompleta', description: 'Por favor, escreva um comentário.', variant: 'destructive' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const photoUrls: string[] = [];
+            for (const photo of photos) {
+                const storageRef = ref(storage, `reviews/${productId}/${Date.now()}_${photo.name}`);
+                await uploadBytes(storageRef, photo);
+                const url = await getDownloadURL(storageRef);
+                photoUrls.push(url);
+            }
+
+            await addDoc(collection(db, 'store_products', productId, 'reviews'), {
+                userId: user.uid,
+                userName: user.displayName || 'Anônimo',
+                userAvatar: user.photoURL,
+                rating,
+                comment,
+                photos: photoUrls,
+                createdAt: serverTimestamp(),
+            });
+
+            toast({ title: 'Avaliação Enviada!', description: 'Obrigado pelo seu feedback!' });
+            setRating(0);
+            setComment('');
+            setPhotos([]);
+        } catch (error) {
+            console.error(error);
+            toast({ title: 'Erro', description: 'Não foi possível enviar sua avaliação.', variant: 'destructive' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (!user) {
+        return <p className='text-sm text-center text-muted-foreground'>Você precisa estar <Link href="/login" className="underline text-primary">logado</Link> para deixar uma avaliação.</p>;
+    }
+
+    return (
+        <Card className="mt-8 bg-muted/50">
+            <CardHeader>
+                <CardTitle>Deixe sua avaliação</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className='flex items-center gap-4'>
+                    <span className='font-medium'>Sua nota:</span>
+                    <ReactStars
+                        count={5}
+                        onChange={(newRating) => setRating(newRating)}
+                        size={28}
+                        activeColor="#9333ea" // Cor primária
+                    />
+                </div>
+                <Textarea
+                    placeholder="Conte-nos o que você achou do produto..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                />
+                 <div>
+                    <label htmlFor="photo-upload" className="block text-sm font-medium text-gray-700 mb-2">Adicionar fotos (opcional)</label>
+                    <Input id="photo-upload" type="file" multiple accept="image/*" onChange={handlePhotoChange} />
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? 'Enviando...' : 'Enviar Avaliação'}
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const params = useParams();
   const id = params.id as string;
@@ -125,6 +241,12 @@ export default function ProductDetailPage() {
         setLoading(false);
       };
       fetchProduct();
+      
+      const reviewsQuery = query(collection(db, 'store_products', id, 'reviews'), orderBy('createdAt', 'desc'));
+      const unsubscribe = onSnapshot(reviewsQuery, (snapshot) => {
+        setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as Review)));
+      });
+      return () => unsubscribe();
     }
   }, [id]);
 
@@ -222,6 +344,45 @@ export default function ProductDetailPage() {
                         </div>
                     </div>
                 </div>
+
+                <Separator className="my-12" />
+                
+                {/* Reviews Section */}
+                <div className='max-w-4xl mx-auto'>
+                    <h2 className='text-2xl font-bold mb-6'>Avaliações de Clientes</h2>
+                    <div className='space-y-8'>
+                        {reviews.length > 0 ? reviews.map(review => (
+                            <div key={review.id} className='flex gap-4 border-b pb-8'>
+                                <Avatar>
+                                    <AvatarImage src={review.userAvatar} alt={review.userName} />
+                                    <AvatarFallback>{review.userName?.[0]}</AvatarFallback>
+                                </Avatar>
+                                <div className='flex-1'>
+                                    <div className='flex items-center gap-2'>
+                                        <p className='font-semibold'>{review.userName}</p>
+                                        <p className='text-xs text-muted-foreground'>- {review.createdAt?.toDate().toLocaleDateString('pt-BR')}</p>
+                                    </div>
+                                    <div className='flex items-center my-1'>
+                                        {Array.from({length: 5}).map((_, i) => (
+                                            <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                        ))}
+                                    </div>
+                                    <p className='text-sm text-muted-foreground'>{review.comment}</p>
+                                    {review.photos && review.photos.length > 0 && (
+                                        <div className='flex gap-2 mt-4'>
+                                            {review.photos.map((photo, i) => (
+                                                <Image key={i} src={photo} alt="Foto da avaliação" width={80} height={80} className='rounded-md object-cover' />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )) : (
+                            <p className='text-center text-muted-foreground'>Este produto ainda não tem avaliações. Seja o primeiro a avaliar!</p>
+                        )}
+                    </div>
+                     <ReviewForm productId={id} />
+                </div>
             </div>
          </div>
       </main>
@@ -229,4 +390,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
