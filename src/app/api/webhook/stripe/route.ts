@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/lib/firebase-admin-init';
+import { getAdminApp } from '@/lib/firebase-admin-init';
 import * as admin from 'firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -15,6 +15,7 @@ export async function POST(req: Request) {
   const signature = req.headers.get('stripe-signature');
 
   let event: Stripe.Event;
+  const { db } = getAdminApp();
 
   try {
     event = stripe.webhooks.constructEvent(payload, signature!, webhookSecret);
@@ -43,15 +44,24 @@ export async function POST(req: Request) {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         products: lineItems.map(item => {
             const product = item.price?.product as Stripe.Product;
+            // Check if product is null and handle accordingly
+            if (!product) {
+                // This could be the shipping cost item, which has no product ID
+                return {
+                    productId: item.price?.id || 'shipping_cost',
+                    name: item.description,
+                    quantity: item.quantity,
+                    price: item.price?.unit_amount! / 100,
+                };
+            }
             return {
-                // IMPORTANT: The Stripe product ID is stored in our Firestore product doc `id`.
                 productId: product.id, 
                 name: product.name,
                 images: product.images,
                 quantity: item.quantity,
                 price: item.price?.unit_amount! / 100,
             }
-        })
+        }).filter(p => p.productId !== 'shipping_cost') // Filter out shipping cost item
       };
 
       // Save order to Firestore
@@ -62,9 +72,12 @@ export async function POST(req: Request) {
       for (const item of orderData.products) {
           if (item.productId) {
             const productRef = db.collection('store_products').doc(item.productId);
-            batch.update(productRef, {
-                stock: admin.firestore.FieldValue.increment(-(item.quantity || 0))
-            });
+            const productDoc = await productRef.get();
+            if (productDoc.exists()) {
+              batch.update(productRef, {
+                  stock: admin.firestore.FieldValue.increment(-(item.quantity || 0))
+              });
+            }
           }
       }
       await batch.commit();
@@ -78,5 +91,3 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ received: true });
 }
-
-    
