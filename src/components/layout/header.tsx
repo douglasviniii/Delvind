@@ -27,6 +27,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export function Header() {
     const { cartCount } = useCart();
@@ -144,8 +145,8 @@ export function Header() {
         <div className="flex flex-1 items-center justify-end space-x-2">
             <SocialIcons className="hidden md:flex items-center space-x-2"/>
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/loja/cart" className="relative">
-                <ShoppingCart className="h-7 w-7 text-primary" />
+              <Link href="/loja/cart" className="relative group">
+                <ShoppingCart className={cn("h-7 w-7 text-primary transition-colors group-hover:text-primary/80 group-focus:text-primary-foreground group-data-[state=open]:text-primary-foreground")} />
                 {cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
                     {cartCount}
