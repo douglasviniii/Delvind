@@ -65,18 +65,27 @@ export async function POST(req: Request) {
       };
 
       // Save order to Firestore
-      await db.collection('orders').add(orderData);
+      const orderRef = await db.collection('orders').add(orderData);
       
       // Update product stock
       const batch = db.batch();
       for (const item of orderData.products) {
-          if (item.productId) {
-            const productRef = db.collection('store_products').doc(item.productId);
-            const productDoc = await productRef.get();
-            if (productDoc.exists()) {
-              batch.update(productRef, {
-                  stock: admin.firestore.FieldValue.increment(-(item.quantity || 0))
-              });
+          // Stripe product IDs might not match Firestore product IDs if you're not syncing them.
+          // This assumes the Stripe Product was created with a specific metadata field or the name is unique enough.
+          // For now, we will assume we need to query by name to find the correct product in Firestore to update stock.
+          if (item.name) {
+            const productsRef = db.collection('store_products');
+            const q = productsRef.where('name', '==', item.name).limit(1);
+            const productSnapshot = await q.get();
+
+            if (!productSnapshot.empty) {
+                const productDoc = productSnapshot.docs[0];
+                const productData = productDoc.data();
+                if (productData.stock !== undefined && productData.stock !== null) {
+                    batch.update(productDoc.ref, {
+                        stock: admin.firestore.FieldValue.increment(-(item.quantity || 0))
+                    });
+                }
             }
           }
       }

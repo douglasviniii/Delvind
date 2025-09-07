@@ -6,7 +6,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.delvind.com';
+// Hardcoding the base URL to ensure it's always correct.
+const BASE_URL = 'https://www.delvind.com';
 
 export async function POST(req: Request) {
   try {
