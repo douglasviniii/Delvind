@@ -102,22 +102,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, [user]);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      toast({
-        title: "Logout bem-sucedido!",
-        description: "Você foi desconectado.",
-      });
-      router.push('/login');
-    } catch (error) {
-        toast({
-            title: "Erro",
-            description: "Não foi possível fazer logout. Tente novamente.",
-            variant: "destructive",
-          });
-      console.error('Erro ao fazer logout:', error);
-    }
+  const handleExitDashboard = () => {
+    router.push('/');
   };
 
   const userInitial = user?.displayName?.[0] || user?.email?.[0] || '';
@@ -179,9 +165,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     </div>
                 </Link>
             </Button>
-            <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-red-500 hover:text-red-500 hover:bg-red-500/10">
+            <Button onClick={handleExitDashboard} variant="ghost" className="w-full justify-start text-red-500 hover:text-red-500 hover:bg-red-500/10">
                 <LogOut className="mr-2 h-4 w-4" />
-                Sair
+                Sair do Painel
             </Button>
         </div>
     </div>
