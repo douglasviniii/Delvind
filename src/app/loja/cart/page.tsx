@@ -1,11 +1,10 @@
-
 'use client';
 
 import { Header } from '@/components/layout/header';
 import { FooterSection } from '@/components/layout/footer-section';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Trash2, Loader2 } from 'lucide-react';
+import { ShoppingCart, Trash2, Loader2, Truck, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/context/cart-context';
@@ -15,9 +14,66 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { loadStripe } from '@stripe/stripe-js';
 
+const ShippingCalculator = () => {
+    const { setShippingInfo, cartRequiresShipping, subtotal } = useCart();
+    const [cep, setCep] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [calculated, setCalculated] = useState(false);
+
+    const handleCalculateShipping = () => {
+        if (!cep.trim() || cep.replace(/\D/g, '').length !== 8) {
+            alert('Por favor, insira um CEP válido.');
+            return;
+        }
+        setLoading(true);
+        
+        // Simulação de chamada de API de frete
+        setTimeout(() => {
+            const shippingCost = subtotal * 0.05 + 5; // 5% do subtotal + 5 reais fixo
+            const deliveryTime = Math.floor(Math.random() * 5) + 3; // 3 a 7 dias
+
+            setShippingInfo({
+                cep,
+                cost: shippingCost,
+                deliveryTime: `${deliveryTime} dias úteis`,
+            });
+            setLoading(false);
+            setCalculated(true);
+        }, 1000);
+    };
+
+    if (!cartRequiresShipping) {
+        return null;
+    }
+
+    return (
+        <div className='mt-4 space-y-2'>
+            <label htmlFor="cep" className='font-medium'>Calcular Frete</label>
+            <div className='flex gap-2'>
+                <Input 
+                    id="cep"
+                    placeholder="Seu CEP" 
+                    value={cep}
+                    onChange={(e) => setCep(e.target.value)}
+                />
+                <Button onClick={handleCalculateShipping} disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin"/> : "Calcular"}
+                </Button>
+            </div>
+            {calculated && (
+                <p className='text-sm text-muted-foreground flex items-center gap-2'>
+                    <CheckCircle className='w-4 h-4 text-green-600'/>
+                    Frete calculado com sucesso. Você pode prosseguir para o checkout.
+                </p>
+            )}
+        </div>
+    );
+};
+
+
 export default function CartPage() {
-  const { cartItems, removeFromCart, updateQuantity, total } = useCart();
-  const [loading, setLoading] = useState(false);
+  const { cartItems, removeFromCart, updateQuantity, subtotal, total, shippingInfo, cartRequiresShipping } = useCart();
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
   const { toast } = useToast();
   
   const formatCurrency = (value: number) => {
@@ -25,14 +81,19 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
-    setLoading(true);
+    setLoadingCheckout(true);
+    if (cartRequiresShipping && !shippingInfo) {
+        toast({ title: 'Aviso', description: 'Por favor, calcule o frete antes de finalizar a compra.', variant: 'default'});
+        setLoadingCheckout(false);
+        return;
+    }
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ cartItems }),
+        body: JSON.stringify({ cartItems, shippingCost: shippingInfo?.cost || 0 }),
       });
 
       const { sessionId, error } = await response.json();
@@ -55,7 +116,7 @@ export default function CartPage() {
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setLoadingCheckout(false);
     }
   };
 
@@ -98,6 +159,7 @@ export default function CartPage() {
                                         </div>
                                     </div>
                                 ))}
+                                <ShippingCalculator />
                             </div>
                         ) : (
                             <div className="text-center py-16 border-2 border-dashed rounded-lg">
@@ -114,13 +176,26 @@ export default function CartPage() {
                     {cartItems.length > 0 && (
                         <CardFooter className='flex-col items-stretch space-y-4'>
                             <Separator />
+                            <div className='flex justify-between text-muted-foreground'>
+                                <span>Subtotal</span>
+                                <span>{formatCurrency(subtotal)}</span>
+                            </div>
+                             {shippingInfo && (
+                                <div className='flex justify-between text-muted-foreground'>
+                                    <span>Frete</span>
+                                    <div className='text-right'>
+                                        <p>{formatCurrency(shippingInfo.cost)}</p>
+                                        <p className='text-xs'>({shippingInfo.deliveryTime})</p>
+                                    </div>
+                                </div>
+                            )}
                             <div className='flex justify-between font-bold text-lg'>
                                 <span>Total</span>
                                 <span>{formatCurrency(total)}</span>
                             </div>
-                            <Button size="lg" className="w-full" onClick={handleCheckout} disabled={loading}>
-                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                {loading ? 'Aguarde...' : 'Finalizar Compra'}
+                            <Button size="lg" className="w-full" onClick={handleCheckout} disabled={loadingCheckout}>
+                                {loadingCheckout ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                {loadingCheckout ? 'Aguarde...' : 'Finalizar Compra'}
                             </Button>
                         </CardFooter>
                     )}

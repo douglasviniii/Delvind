@@ -8,13 +8,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: Request) {
   try {
-    const { cartItems } = await req.json();
+    const { cartItems, shippingCost } = await req.json();
 
     if (!cartItems || cartItems.length === 0) {
       return NextResponse.json({ error: 'O carrinho está vazio.' }, { status: 400 });
     }
 
-    const line_items = cartItems.map((item: any) => ({
+    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = cartItems.map((item: any) => ({
       price_data: {
         currency: 'brl',
         product_data: {
@@ -25,16 +25,34 @@ export async function POST(req: Request) {
       },
       quantity: item.quantity,
     }));
+    
+    const requiresShipping = cartItems.some((item: any) => item.requiresShipping);
+
+    if (requiresShipping && shippingCost > 0) {
+        line_items.push({
+            price_data: {
+                currency: 'brl',
+                product_data: {
+                    name: 'Custo de Envio',
+                },
+                unit_amount: Math.round(shippingCost * 100),
+            },
+            quantity: 1,
+        });
+    }
+
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'boleto'],
+      payment_method_types: ['card', 'boleto', 'pix'],
       line_items,
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/loja/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/loja/cart`,
-      shipping_address_collection: {
-        allowed_countries: ['BR'],
-      },
+      ...(requiresShipping && {
+        shipping_address_collection: {
+            allowed_countries: ['BR'],
+        },
+      })
     });
 
     return NextResponse.json({ sessionId: session.id });

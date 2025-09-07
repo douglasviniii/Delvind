@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -33,6 +32,7 @@ const productSchema = z.object({
   categoryId: z.string({ required_error: "A categoria é obrigatória." }),
   stock: z.coerce.number().optional(),
   hasStock: z.boolean().default(false),
+  requiresShipping: z.boolean().default(false),
   imageUrl: z.string().url('A URL da imagem é obrigatória.'),
 });
 
@@ -72,7 +72,7 @@ export function ManageProducts() {
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', description: '', price: '0,00', categoryId: '', hasStock: false, imageUrl: '' },
+    defaultValues: { name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, imageUrl: '' },
   });
 
   const hasStock = form.watch('hasStock');
@@ -123,6 +123,7 @@ export function ManageProducts() {
             price: formatCurrency(fullData.price),
             promoPrice: formatCurrency(fullData.promoPrice),
             hasStock: !!fullData.stock,
+            requiresShipping: !!fullData.requiresShipping,
         };
         setEditingProduct(dataToEdit);
         form.reset(dataToEdit);
@@ -205,15 +206,26 @@ export function ManageProducts() {
                     )} />
                 </div>
 
-                <FormField control={form.control} name="hasStock" render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        <div className="space-y-1 leading-none">
-                            <FormLabel>Controlar Estoque?</FormLabel>
-                            <FormMessage />
-                        </div>
-                    </FormItem>
-                )}/>
+                <div className='flex gap-4'>
+                    <FormField control={form.control} name="hasStock" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            <div className="space-y-1 leading-none">
+                                <FormLabel>Controlar Estoque?</FormLabel>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="requiresShipping" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            <div className="space-y-1 leading-none">
+                                <FormLabel>Produto Físico (Requer Entrega)?</FormLabel>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )}/>
+                </div>
 
                 {hasStock && (
                     <FormField control={form.control} name="stock" render={({ field }) => (
