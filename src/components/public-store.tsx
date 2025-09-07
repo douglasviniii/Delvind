@@ -62,14 +62,14 @@ export function PublicStore() {
   
   if (loading) {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-96 w-full" />)}
         </div>
       )
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {products.map(product => (
         <Card key={product.id} className="flex flex-col overflow-hidden group">
             <div className="relative overflow-hidden">

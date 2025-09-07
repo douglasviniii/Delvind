@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from "../../components/ui/button";
-import { Home, User, Settings, LifeBuoy, LogOut, Menu, PenSquare, DollarSign, Bell, Package, MessageSquare, FileSignature, Receipt, Sun, Moon, Calendar, FileText, Rss, Briefcase, Store } from "lucide-react";
+import { Home, User, Settings, LifeBuoy, LogOut, Menu, PenSquare, DollarSign, Bell, Package, MessageSquare, FileSignature, Receipt, Sun, Moon, Calendar, FileText, Rss, Briefcase, Store, ShoppingCart } from "lucide-react";
 import Link from 'next/link';
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth, ProtectedRoute } from "../../context/auth-context";
@@ -24,6 +24,7 @@ import { Logo } from '../../components/layout/logo';
 import { cn } from '../../lib/utils';
 import { ChatWidget } from '../../components/layout/chat-widget';
 import { collection, onSnapshot, query, where, collectionGroup } from 'firebase/firestore';
+import { useCart } from '@/context/cart-context';
 
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  const { cartCount } = useCart();
   
   const [notifications, setNotifications] = useState({
       budgets: false,
@@ -210,9 +212,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
+            </Button>
+             <Button variant="ghost" size="icon" asChild>
+              <Link href="/loja/cart" className="relative">
+                <ShoppingCart className="h-7 w-7 text-primary" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                    {cartCount}
+                  </span>
+                )}
+                <span className="sr-only">Carrinho</span>
+              </Link>
             </Button>
           </div>
         </header>

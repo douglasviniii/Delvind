@@ -1,13 +1,13 @@
 
-
 'use client';
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ManageProducts } from '@/components/admin/store/manage-products';
 import { ManageCategories } from '@/components/admin/store/manage-categories';
-import { Box, Settings, ShoppingCart } from 'lucide-react';
+import { Box, Settings, ShoppingCart, LayoutDashboard } from 'lucide-react';
 import { ManageOrders } from '@/components/admin/store/manage-orders';
+import { StoreDashboard } from '@/components/admin/store/dashboard';
 
 export default function AdminStorePage() {
   return (
@@ -15,12 +15,16 @@ export default function AdminStorePage() {
       <div>
         <h1 className="text-2xl font-bold">Gerenciamento da Loja</h1>
         <p className="text-muted-foreground">
-          Adicione, edite e gerencie seus produtos, categorias e pedidos.
+          Acompanhe as métricas, adicione, edite e gerencie seus produtos, categorias e pedidos.
         </p>
       </div>
 
-      <Tabs defaultValue="products" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+           <TabsTrigger value="dashboard">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            Dashboard
+          </TabsTrigger>
           <TabsTrigger value="products">
             <Box className="mr-2 h-4 w-4" />
             Produtos
@@ -34,6 +38,9 @@ export default function AdminStorePage() {
             Pedidos
           </TabsTrigger>
         </TabsList>
+        <TabsContent value="dashboard">
+          <StoreDashboard />
+        </TabsContent>
         <TabsContent value="products">
           <ManageProducts />
         </TabsContent>
