@@ -1,6 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'darkgreen-lark-741030.hostingersite.com',
+        port: '',
+        pathname: '/img/**',
+      },
+    ],
+  },
   trailingSlash: false,
 };
 
