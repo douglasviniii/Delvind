@@ -3,15 +3,22 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, where, getDocs } from 'firebase/firestore';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/context/cart-context';
+import dynamic from 'next/dynamic';
+
+const ReactStars = dynamic(() => import('react-rating-stars-component'), { ssr: false });
+
+type Review = {
+    rating: number;
+};
 
 type Product = {
   id: string;
@@ -24,6 +31,7 @@ type Product = {
   description: string;
   categoryId: string;
   requiresShipping?: boolean;
+  reviews?: Review[]; // Optional to start with
 };
 
 type Category = {
@@ -44,8 +52,19 @@ export function PublicStore() {
   useEffect(() => {
     setLoading(true);
     const productsQuery = query(collection(db, 'store_products'), orderBy('name', 'asc'));
-    const unsubscribeProducts = onSnapshot(productsQuery, (snapshot) => {
-      setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+    
+    const unsubscribeProducts = onSnapshot(productsQuery, async (snapshot) => {
+      const productsData = await Promise.all(snapshot.docs.map(async (doc) => {
+        const product = { id: doc.id, ...doc.data() } as Product;
+        
+        // Fetch reviews for each product
+        const reviewsQuery = query(collection(db, 'store_products', doc.id, 'reviews'));
+        const reviewsSnapshot = await getDocs(reviewsQuery);
+        product.reviews = reviewsSnapshot.docs.map(reviewDoc => reviewDoc.data() as Review);
+
+        return product;
+      }));
+      setProducts(productsData);
       setLoading(false);
     });
 
@@ -70,7 +89,12 @@ export function PublicStore() {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {products.map(product => (
+      {products.map(product => {
+         const averageRating = product.reviews && product.reviews.length > 0 
+            ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length 
+            : 0;
+
+        return (
         <Card key={product.id} className="flex flex-col overflow-hidden group">
             <div className="relative overflow-hidden">
                 <Link href={`/loja/${product.id}`}>
@@ -96,6 +120,18 @@ export function PublicStore() {
                 />
             </CardHeader>
             <CardContent>
+                <div className="flex items-center gap-2 mb-2">
+                     {averageRating > 0 && (
+                        <ReactStars
+                            count={5}
+                            value={averageRating}
+                            size={18}
+                            isHalf={true}
+                            edit={false}
+                            activeColor="#f59e0b"
+                        />
+                     )}
+                </div>
                 {product.promoPrice ? (
                     <div className='flex items-baseline gap-2'>
                         <p className="text-2xl font-bold">{formatCurrency(product.promoPrice)}</p>
@@ -117,7 +153,7 @@ export function PublicStore() {
             </Button>
           </CardFooter>
         </Card>
-      ))}
+      )})}
     </div>
   );
 }

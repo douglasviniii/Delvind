@@ -285,6 +285,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const { addToCart } = useCart();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -309,6 +310,11 @@ export default function ProductDetailPage() {
     }
   }, [id]);
 
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast({ title: 'Link Copiado!', description: 'O link do produto foi copiado para sua área de transferência.' });
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -326,6 +332,7 @@ export default function ProductDetailPage() {
   }
   
   const hasPromo = product.promoPrice && product.promoPrice < product.price;
+  const averageRating = reviews.length > 0 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -335,6 +342,11 @@ export default function ProductDetailPage() {
             <div className="fixed inset-0 -z-10 bg-gradient-to-br from-white via-pink-100 to-blue-200" />
             <div className="container py-12">
                 <SmartOffer product={product} />
+                <div className='mb-8'>
+                  <Button asChild variant="outline">
+                    <Link href="/loja"><ArrowLeft className='w-4 h-4 mr-2' /> Voltar para a loja</Link>
+                  </Button>
+                </div>
                 <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
                     {/* Image Gallery */}
                     <div>
@@ -359,6 +371,19 @@ export default function ProductDetailPage() {
                     <div className='space-y-6'>
                         <div>
                             <h1 className="text-3xl lg:text-4xl font-bold">{product.name}</h1>
+                            {reviews.length > 0 && (
+                                <div className="flex items-center gap-2 mt-2">
+                                    <ReactStars
+                                        count={5}
+                                        value={averageRating}
+                                        size={20}
+                                        isHalf={true}
+                                        edit={false}
+                                        activeColor="#f59e0b" // Amarelo/Laranja para estrelas
+                                    />
+                                    <span className="text-sm text-muted-foreground">({reviews.length} avaliações)</span>
+                                </div>
+                            )}
                         </div>
                         
                         <div className='space-y-2'>
@@ -402,6 +427,9 @@ export default function ProductDetailPage() {
                                 className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
                                 dangerouslySetInnerHTML={{ __html: product.description }}
                             />
+                             <Button variant="outline" className="w-full" onClick={handleShare}>
+                                <Share2 className="mr-2 h-4 w-4" /> Compartilhar Produto
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -410,7 +438,7 @@ export default function ProductDetailPage() {
                 
                 {/* Reviews Section */}
                 <div className='max-w-4xl mx-auto'>
-                    <h2 className='text-2xl font-bold mb-6'>Avaliações de Clientes</h2>
+                    <h2 className='text-2xl font-bold mb-6'>Avaliações de Clientes ({reviews.length})</h2>
                     <div className='space-y-8'>
                         {reviews.length > 0 ? reviews.map(review => (
                             <div key={review.id} className='flex gap-4 border-b pb-8'>
@@ -424,9 +452,13 @@ export default function ProductDetailPage() {
                                         <p className='text-xs text-muted-foreground'>- {review.createdAt?.toDate().toLocaleDateString('pt-BR')}</p>
                                     </div>
                                     <div className='flex items-center my-1'>
-                                        {Array.from({length: 5}).map((_, i) => (
-                                            <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
-                                        ))}
+                                        <ReactStars
+                                            count={5}
+                                            value={review.rating}
+                                            size={16}
+                                            edit={false}
+                                            activeColor="#f59e0b"
+                                        />
                                     </div>
                                     <p className='text-sm text-muted-foreground'>{review.comment}</p>
                                     {review.photos && review.photos.length > 0 && (
