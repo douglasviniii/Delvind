@@ -41,13 +41,14 @@ export async function POST(req: Request) {
         });
     }
 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card', 'boleto'],
       line_items,
       mode: 'payment',
-      success_url: `https://www.delvind.com/loja/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `https://www.delvind.com/loja/cart`,
+      success_url: `${baseUrl}/loja/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/loja/cart`,
       ...(requiresShipping && {
         shipping_address_collection: {
             allowed_countries: ['BR'],
