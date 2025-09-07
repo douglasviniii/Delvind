@@ -134,9 +134,9 @@ export function PublicStore() {
                      )}
                 </div>
                 {product.promoPrice ? (
-                    <div className='flex items-baseline gap-2'>
-                        <p className="text-2xl font-bold">{formatCurrency(product.promoPrice)}</p>
+                    <div className='flex flex-col'>
                         <p className="text-sm text-muted-foreground line-through">{formatCurrency(product.price)}</p>
+                        <p className="text-2xl font-bold">{formatCurrency(product.promoPrice)}</p>
                     </div>
                 ) : (
                     <p className="text-2xl font-bold">{formatCurrency(product.price)}</p>
