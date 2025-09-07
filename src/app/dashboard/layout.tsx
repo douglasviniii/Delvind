@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from "../../components/ui/button";
-import { Home, User, Settings, LifeBuoy, LogOut, Menu, PenSquare, DollarSign, Bell, Package, MessageSquare, FileSignature, Receipt, Sun, Moon, Calendar, FileText, Rss, Briefcase, Store, ShoppingCart, ArchiveBox } from "lucide-react";
+import { Home, User, Settings, LifeBuoy, LogOut, Menu, PenSquare, DollarSign, Bell, Package, MessageSquare, FileSignature, Receipt, Sun, Moon, Calendar, FileText, Rss, Briefcase, Store, ShoppingCart, Archive as ArchiveBox } from "lucide-react";
 import Link from 'next/link';
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth, ProtectedRoute } from "../../context/auth-context";
