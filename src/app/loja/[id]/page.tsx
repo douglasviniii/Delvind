@@ -404,18 +404,18 @@ export default function ProductDetailPage() {
                         </div>
                         
                         <div className='space-y-4'>
-                            <div className="flex flex-col sm:flex-row items-stretch gap-4">
-                                <div className="flex items-center justify-center gap-2 border rounded-md p-2">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQuantity(q => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></Button>
+                            <div className="flex flex-col sm:flex-row items-center gap-4">
+                                <div className="flex items-center justify-center gap-2 border rounded-md p-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setQuantity(q => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></Button>
                                     <Input 
                                         type="number" 
                                         value={quantity}
                                         onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                                         className="w-16 h-8 text-center border-0 focus-visible:ring-0"
                                     />
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQuantity(q => q + 1)}><Plus className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setQuantity(q => q + 1)}><Plus className="h-4 w-4" /></Button>
                                 </div>
-                                <Button size="lg" className="w-full sm:flex-1" disabled={product.stock === 0} onClick={() => addToCart(product, quantity)}>
+                                <Button size="lg" className="w-full flex-1" disabled={product.stock === 0} onClick={() => addToCart(product, quantity)}>
                                     <ShoppingCart className="mr-2 h-5 w-5" />
                                     Adicionar ao Carrinho
                                 </Button>
