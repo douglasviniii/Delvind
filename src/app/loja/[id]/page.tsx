@@ -19,7 +19,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -36,7 +36,11 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Textarea } from '@/components/ui/textarea';
-import ReactStars from 'react-rating-stars-component';
+import dynamic from 'next/dynamic';
+import { Input } from '@/components/ui/input';
+import Link from 'next/link';
+
+const ReactStars = dynamic(() => import('react-rating-stars-component'), { ssr: false });
 
 
 type Product = {
@@ -194,7 +198,7 @@ const ReviewForm = ({ productId }: { productId: string }) => {
                     <span className='font-medium'>Sua nota:</span>
                     <ReactStars
                         count={5}
-                        onChange={(newRating) => setRating(newRating)}
+                        onChange={(newRating: number) => setRating(newRating)}
                         size={28}
                         activeColor="#9333ea" // Cor primária
                     />
