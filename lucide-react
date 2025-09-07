@@ -1,0 +1,9 @@
+
+"use client";
+export * from "lucide-react";
+import { createLucideIcon } from "lucide-react";
+export const ArchiveBox = createLucideIcon("ArchiveBox", [
+  ["path", { d: "M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8", key: "mil2a4" }],
+  ["path", { d: "M1 3h22v5H1z", key: "1dmk3z" }],
+  ["path", { d: "M10 12h4", key: "1a08e5" }],
+]);
