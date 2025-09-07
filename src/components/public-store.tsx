@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, Truck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/context/cart-context';
@@ -31,6 +31,7 @@ type Product = {
   description: string;
   categoryId: string;
   requiresShipping?: boolean;
+  freeShipping?: boolean;
   reviews?: Review[]; // Optional to start with
 };
 
@@ -107,7 +108,12 @@ export function PublicStore() {
                     />
                 </Link>
                 {product.label && (
-                    <Badge className="absolute top-2 right-2" variant="destructive">{product.label}</Badge>
+                    <Badge className="absolute top-2 left-2" variant="destructive">{product.label}</Badge>
+                )}
+                 {product.freeShipping && (
+                    <Badge className="absolute top-2 right-2 bg-green-600 text-white flex items-center gap-1">
+                        <Truck className="w-3 h-3"/> Frete Grátis
+                    </Badge>
                 )}
                  <Link href={`/loja/${product.id}`} className='absolute bottom-2 right-2'>
                     <Button size="icon" className='rounded-full h-10 w-10'>

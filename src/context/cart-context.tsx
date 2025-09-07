@@ -12,6 +12,7 @@ type Product = {
   imageUrl: string;
   stock?: number;
   requiresShipping?: boolean;
+  freeShipping?: boolean;
 };
 
 type CartItem = Product & {
@@ -113,7 +114,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, 0);
   
   const cartRequiresShipping = cartItems.some(item => item.requiresShipping);
-  const total = subtotal + (shippingInfo?.cost || 0);
+  
+  // Check if all items that require shipping have free shipping
+  const allItemsHaveFreeShipping = cartItems
+    .filter(item => item.requiresShipping)
+    .every(item => item.freeShipping);
+
+  const shippingCost = (cartRequiresShipping && !allItemsHaveFreeShipping) ? (shippingInfo?.cost || 0) : 0;
+  
+  const total = subtotal + shippingCost;
+
 
   return (
     <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, shippingInfo, setShippingInfo, cartCount, subtotal, total, cartRequiresShipping }}>

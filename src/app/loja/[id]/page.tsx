@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -38,6 +39,8 @@ import { Textarea } from '@/components/ui/textarea';
 import dynamic from 'next/dynamic';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+
 
 const ReactStars = dynamic(() => import('react-rating-stars-component'), { ssr: false });
 
@@ -54,6 +57,7 @@ type Product = {
   description: string;
   categoryId: string;
   requiresShipping?: boolean;
+  freeShipping?: boolean;
 };
 
 type Review = {
@@ -236,7 +240,7 @@ const ProductShippingCalculator = ({ product }: { product: Product }) => {
         // Simulação de chamada de API de frete
         setTimeout(() => {
             const productPrice = product.promoPrice || product.price;
-            const shippingCost = productPrice * 0.05 + 5; // 5% do preço do produto + 5 reais fixo
+            const shippingCost = product.freeShipping ? 0 : productPrice * 0.05 + 5; // 5% do preço do produto + 5 reais fixo
             const deliveryTime = Math.floor(Math.random() * 5) + 3; // 3 a 7 dias
 
             setShippingResult({
@@ -249,6 +253,17 @@ const ProductShippingCalculator = ({ product }: { product: Product }) => {
 
     if (!product.requiresShipping) {
         return null;
+    }
+    
+     if (product.freeShipping) {
+        return (
+            <div className="mt-6 pt-6 border-t">
+                 <div className='flex items-center gap-2 p-3 border rounded-lg bg-green-100 text-green-800'>
+                    <Truck className='w-5 h-5'/>
+                    <span className='font-semibold'>Frete Grátis para este produto!</span>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -371,7 +386,14 @@ export default function ProductDetailPage() {
                     {/* Product Info */}
                     <div className='space-y-6'>
                         <div>
-                            <h1 className="text-3xl lg:text-4xl font-bold">{product.name}</h1>
+                            <div className='flex items-center gap-4'>
+                                <h1 className="text-3xl lg:text-4xl font-bold">{product.name}</h1>
+                                {product.freeShipping && (
+                                    <Badge className="bg-green-600 text-white flex items-center gap-1">
+                                        <Truck className="w-3 h-3"/> Frete Grátis
+                                    </Badge>
+                                )}
+                            </div>
                             {reviews.length > 0 && (
                                 <div className="flex items-center gap-2 mt-2">
                                     <ReactStars
@@ -404,7 +426,7 @@ export default function ProductDetailPage() {
                         </div>
                         
                         <div className='space-y-4'>
-                            <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <div className="flex flex-col sm:flex-row items-stretch gap-4">
                                 <div className="flex items-center justify-center gap-2 border rounded-md p-1">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setQuantity(q => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></Button>
                                     <Input 

@@ -21,6 +21,11 @@ const ShippingCalculator = () => {
     const [loading, setLoading] = useState(false);
     const [calculated, setCalculated] = useState(false);
 
+    // Check if all items requiring shipping have free shipping
+    const allItemsHaveFreeShipping = useCart().cartItems
+        .filter(item => item.requiresShipping)
+        .every(item => item.freeShipping);
+
     const handleCalculateShipping = () => {
         if (!cep.trim() || cep.replace(/\D/g, '').length !== 8) {
             alert('Por favor, insira um CEP válido.');
@@ -30,7 +35,7 @@ const ShippingCalculator = () => {
         
         // Simulação de chamada de API de frete
         setTimeout(() => {
-            const shippingCost = subtotal * 0.05 + 5; // 5% do subtotal + 5 reais fixo
+            const shippingCost = allItemsHaveFreeShipping ? 0 : subtotal * 0.05 + 5; // 5% do subtotal + 5 reais fixo, ou 0 se todos os itens tem frete grátis
             const deliveryTime = Math.floor(Math.random() * 5) + 3; // 3 a 7 dias
 
             setShippingInfo({
@@ -45,6 +50,15 @@ const ShippingCalculator = () => {
 
     if (!cartRequiresShipping) {
         return null;
+    }
+    
+    if (allItemsHaveFreeShipping) {
+        return (
+            <div className='mt-4 p-4 bg-green-100 text-green-800 rounded-md flex items-center gap-2'>
+                <Truck className='w-5 h-5'/>
+                <p className='font-semibold'>Frete Grátis para todos os itens no seu carrinho!</p>
+            </div>
+        )
     }
 
     return (
@@ -80,10 +94,14 @@ export default function CartPage() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
+  
+  const allItemsHaveFreeShipping = cartItems
+        .filter(item => item.requiresShipping)
+        .every(item => item.freeShipping);
 
   const handleCheckout = async () => {
     setLoadingCheckout(true);
-    if (cartRequiresShipping && !shippingInfo) {
+    if (cartRequiresShipping && !shippingInfo && !allItemsHaveFreeShipping) {
         toast({ title: 'Aviso', description: 'Por favor, calcule o frete antes de finalizar a compra.', variant: 'default'});
         setLoadingCheckout(false);
         return;
@@ -94,7 +112,7 @@ export default function CartPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ cartItems, shippingCost: shippingInfo?.cost || 0 }),
+        body: JSON.stringify({ cartItems, shippingCost: (cartRequiresShipping && !allItemsHaveFreeShipping) ? (shippingInfo?.cost || 0) : 0 }),
       });
 
       const { sessionId, error } = await response.json();
@@ -184,12 +202,20 @@ export default function CartPage() {
                                 <span>Subtotal</span>
                                 <span>{formatCurrency(subtotal)}</span>
                             </div>
-                             {shippingInfo && (
+                             {shippingInfo && !allItemsHaveFreeShipping && (
                                 <div className='flex justify-between text-muted-foreground'>
                                     <span>Frete</span>
                                     <div className='text-right'>
                                         <p>{formatCurrency(shippingInfo.cost)}</p>
                                         <p className='text-xs'>({shippingInfo.deliveryTime})</p>
+                                    </div>
+                                </div>
+                            )}
+                             {allItemsHaveFreeShipping && (
+                                <div className='flex justify-between text-green-600 font-semibold'>
+                                    <span>Frete</span>
+                                    <div className='text-right'>
+                                        <p>Grátis</p>
                                     </div>
                                 </div>
                             )}

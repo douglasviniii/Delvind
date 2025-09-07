@@ -34,6 +34,7 @@ const productSchema = z.object({
   stock: z.coerce.number().optional(),
   hasStock: z.boolean().default(false),
   requiresShipping: z.boolean().default(false),
+  freeShipping: z.boolean().default(false),
   imageUrls: z.array(z.string().url()).min(1, 'Adicione pelo menos uma imagem.'),
 });
 
@@ -73,7 +74,7 @@ export function ManageProducts() {
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, imageUrls: [] },
+    defaultValues: { name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -82,6 +83,8 @@ export function ManageProducts() {
   });
 
   const hasStock = form.watch('hasStock');
+  const requiresShipping = form.watch('requiresShipping');
+
 
   useEffect(() => {
     const productsQuery = query(collection(db, 'store_products'), orderBy('name', 'asc'));
@@ -131,6 +134,7 @@ export function ManageProducts() {
             promoPrice2: formatCurrency(fullData.promoPrice2),
             hasStock: !!fullData.stock,
             requiresShipping: !!fullData.requiresShipping,
+            freeShipping: !!fullData.freeShipping,
         };
         setEditingProduct(dataToEdit);
         form.reset(dataToEdit);
@@ -150,6 +154,7 @@ export function ManageProducts() {
         promoPrice: parseCurrency(values.promoPrice),
         promoPrice2: parseCurrency(values.promoPrice2),
         stock: values.hasStock ? values.stock : null,
+        freeShipping: values.requiresShipping ? values.freeShipping : false, // Only allow free shipping if shipping is required
     };
     delete (dataToSave as any).hasStock;
 
@@ -160,7 +165,7 @@ export function ManageProducts() {
       await addDoc(collection(db, 'store_products'), { ...dataToSave, createdAt: serverTimestamp() });
       toast({ title: 'Produto Adicionado' });
     }
-    form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, imageUrls: [] });
+    form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
     setEditingProduct(null);
     setIsDialogOpen(false);
   };
@@ -175,7 +180,7 @@ export function ManageProducts() {
         <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
              if (!isOpen) {
                 setEditingProduct(null);
-                form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, imageUrls: [] });
+                form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
             }
             setIsDialogOpen(isOpen);
         }}>
@@ -221,7 +226,7 @@ export function ManageProducts() {
                     )} />
                 </div>
 
-                <div className='flex gap-4'>
+                <div className='flex flex-wrap gap-4'>
                     <FormField control={form.control} name="hasStock" render={({ field }) => (
                         <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
                             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -235,11 +240,22 @@ export function ManageProducts() {
                         <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
                             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             <div className="space-y-1 leading-none">
-                                <FormLabel>Produto Físico (Requer Entrega)?</FormLabel>
+                                <FormLabel>Produto Físico?</FormLabel>
                                 <FormMessage />
                             </div>
                         </FormItem>
                     )}/>
+                     {requiresShipping && (
+                        <FormField control={form.control} name="freeShipping" render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                <div className="space-y-1 leading-none">
+                                    <FormLabel>Frete Grátis?</FormLabel>
+                                    <FormMessage />
+                                </div>
+                            </FormItem>
+                        )}/>
+                     )}
                 </div>
 
                 {hasStock && (
@@ -333,4 +349,3 @@ export function ManageProducts() {
     </Card>
   );
 }
-
