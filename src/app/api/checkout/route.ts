@@ -6,9 +6,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
 });
 
-// Hardcoding the base URL to ensure it's always correct.
-const BASE_URL = 'https://www.delvind.com';
-
 export async function POST(req: Request) {
   try {
     const { cartItems, shippingCost } = await req.json();
@@ -49,8 +46,8 @@ export async function POST(req: Request) {
       payment_method_types: ['card', 'boleto'],
       line_items,
       mode: 'payment',
-      success_url: `${BASE_URL}/loja/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${BASE_URL}/loja/cart`,
+      success_url: `https://www.delvind.com/loja/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://www.delvind.com/loja/cart`,
       ...(requiresShipping && {
         shipping_address_collection: {
             allowed_countries: ['BR'],

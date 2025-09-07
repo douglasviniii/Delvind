@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useCart } from '@/context/cart-context';
 import { CheckCircle } from 'lucide-react';
 import Link from 'next/link';
