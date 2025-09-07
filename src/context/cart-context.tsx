@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
@@ -25,7 +26,7 @@ type ShippingInfo = {
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -67,17 +68,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [shippingInfo]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, quantity: number) => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === product.id);
       if (existingItem) {
-        toast({ title: "Produto já está no carrinho", description: `A quantidade de "${product.name}" foi atualizada.` });
+        const newQuantity = existingItem.quantity + quantity;
+        toast({ title: "Produto já está no carrinho", description: `A quantidade de "${product.name}" foi atualizada para ${newQuantity}.` });
         return prevItems.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id ? { ...item, quantity: newQuantity } : item
         );
       } else {
-        toast({ title: "Produto adicionado!", description: `"${product.name}" foi adicionado ao seu carrinho.` });
-        return [...prevItems, { ...product, quantity: 1 }];
+        toast({ title: "Produto adicionado!", description: `${quantity}x "${product.name}" foi adicionado ao seu carrinho.` });
+        return [...prevItems, { ...product, quantity }];
       }
     });
   };

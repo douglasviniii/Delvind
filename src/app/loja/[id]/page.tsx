@@ -11,7 +11,7 @@ import { FooterSection } from '@/components/layout/footer-section';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, ShoppingCart, Share2, Shield, Truck, Star, Upload, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ShoppingCart, Share2, Shield, Truck, Star, Upload, Loader2, Minus, Plus } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -91,7 +91,7 @@ const SmartOffer = ({ product }: { product: Product }) => {
     }, [product.id, product.promoPrice]);
 
     const handleAcceptOffer = () => {
-        addToCart({ ...product, price: product.promoPrice! });
+        addToCart({ ...product, price: product.promoPrice! }, 1);
         setShowOffer(false);
         toast({
             title: "Oferta Adicionada!",
@@ -282,6 +282,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
   const params = useParams();
   const id = params.id as string;
   const { addToCart } = useCart();
@@ -403,10 +404,23 @@ export default function ProductDetailPage() {
                         </div>
                         
                         <div className='space-y-4'>
-                             <Button size="lg" className="w-full" disabled={product.stock === 0} onClick={() => addToCart(product)}>
-                                <ShoppingCart className="mr-2 h-5 w-5" />
-                                Adicionar ao Carrinho
-                            </Button>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 border rounded-md p-2">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQuantity(q => Math.max(1, q - 1))}><Minus className="h-4 w-4" /></Button>
+                                    <Input 
+                                        type="number" 
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                                        className="w-16 h-8 text-center border-0 focus-visible:ring-0"
+                                    />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQuantity(q => q + 1)}><Plus className="h-4 w-4" /></Button>
+                                </div>
+                                <Button size="lg" className="w-full" disabled={product.stock === 0} onClick={() => addToCart(product, quantity)}>
+                                    <ShoppingCart className="mr-2 h-5 w-5" />
+                                    Adicionar ao Carrinho
+                                </Button>
+                            </div>
+
                             <div className='grid grid-cols-2 gap-4 text-sm'>
                                 <div className='flex items-center gap-2 p-3 border rounded-lg bg-background/50'>
                                     <Truck className='w-5 h-5 text-muted-foreground'/>

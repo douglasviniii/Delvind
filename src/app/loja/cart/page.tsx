@@ -1,10 +1,11 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
 import { FooterSection } from '@/components/layout/footer-section';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Trash2, Loader2, Truck, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Trash2, Loader2, Truck, CheckCircle, Plus, Minus } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/context/cart-context';
@@ -146,13 +147,16 @@ export default function CartPage() {
                                             <p className='text-sm text-primary'>{formatCurrency(item.promoPrice || item.price)}</p>
                                         </div>
                                         <div className='flex items-center gap-2'>
-                                            <Input 
-                                                type="number" 
-                                                min="1"
-                                                value={item.quantity}
-                                                onChange={(e) => updateQuantity(item.id, parseInt(e.target.value))}
-                                                className="w-16 text-center"
-                                            />
+                                             <div className="flex items-center gap-1 border rounded-md">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
+                                                <Input 
+                                                    type="number"
+                                                    value={item.quantity}
+                                                    onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
+                                                    className="w-12 h-8 text-center border-0 focus-visible:ring-0"
+                                                />
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity + 1)}><Plus className="h-4 w-4" /></Button>
+                                            </div>
                                             <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.id)}>
                                                 <Trash2 className="w-4 h-4 text-destructive"/>
                                             </Button>
