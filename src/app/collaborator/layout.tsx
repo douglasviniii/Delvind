@@ -27,7 +27,7 @@ const navItems = [
     { href: "/collaborator/feed-blog", icon: Rss, label: "Feed Blog", notificationKey: null },
     { href: "/collaborator/contracts", icon: FileSignature, label: "Meus Contratos", notificationKey: 'contracts' },
     { href: "/collaborator/receipts", icon: Receipt, label: "Meus Recibos", notificationKey: 'receipts' },
-    { href: "/collaborator/loja", icon: Store, label: "Loja", notificationKey: null },
+    { href: "/collaborator/store", icon: Store, label: "Loja", notificationKey: null },
     { href: "/collaborator/chat", icon: MessageSquare, label: "Chat", notificationKey: null },
 ];
 
