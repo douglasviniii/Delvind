@@ -98,20 +98,6 @@ export function StoreDashboard() {
                 icon={<Truck className="h-4 w-4 text-muted-foreground" />} 
                 isLoading={loading}
            />
-            <StatCard 
-                title="Carrinhos Ativos" 
-                value={0}
-                description="Funcionalidade em desenvolvimento"
-                icon={<ShoppingBasket className="h-4 w-4 text-muted-foreground" />} 
-                isLoading={loading}
-           />
-            <StatCard 
-                title="Carrinhos Abandonados" 
-                value={0}
-                description="Funcionalidade em desenvolvimento"
-                icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />} 
-                isLoading={loading}
-           />
         </div>
     );
 }
