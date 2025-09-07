@@ -109,15 +109,16 @@ export function PublicStore() {
                 {product.label && (
                     <Badge className="absolute top-2 right-2" variant="destructive">{product.label}</Badge>
                 )}
+                 <Link href={`/loja/${product.id}`} className='absolute bottom-2 right-2'>
+                    <Button size="icon" className='rounded-full h-10 w-10'>
+                      <ShoppingCart className="w-5 h-5"/>
+                    </Button>
+                </Link>
             </div>
-            <CardHeader className="flex-1">
-                <CardTitle>
+            <CardHeader className="flex-1 pb-2">
+                <CardTitle className="text-base">
                      <Link href={`/loja/${product.id}`} className='hover:text-primary'>{product.name}</Link>
                 </CardTitle>
-                <div
-                    className="text-sm text-muted-foreground line-clamp-3"
-                    dangerouslySetInnerHTML={{ __html: product.description }}
-                />
             </CardHeader>
             <CardContent>
                 <div className="flex items-center gap-2 mb-2">
@@ -146,12 +147,6 @@ export function PublicStore() {
                     </p>
                 )}
             </CardContent>
-            <CardFooter>
-            <Button className="w-full" disabled={product.stock === 0} onClick={() => addToCart(product)}>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Adicionar ao Carrinho
-            </Button>
-          </CardFooter>
         </Card>
       )})}
     </div>
