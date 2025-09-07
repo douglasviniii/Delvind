@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -307,7 +308,13 @@ export function ManageProducts() {
           <TableBody>
             {products.map(product => (
               <TableRow key={product.id}>
-                <TableCell><Image src={product.imageUrls[0]} alt={product.name} width={60} height={60} className="rounded-md object-cover" /></TableCell>
+                <TableCell>
+                  {product.imageUrls && product.imageUrls.length > 0 ? (
+                    <Image src={product.imageUrls[0]} alt={product.name} width={60} height={60} className="rounded-md object-cover" />
+                  ) : (
+                    <div className="w-[60px] h-[60px] bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground">Sem Imagem</div>
+                  )}
+                </TableCell>
                 <TableCell>{product.name}</TableCell>
                 <TableCell>{product.promoPrice ? <><span className='line-through text-muted-foreground'>{formatCurrency(product.price)}</span> {formatCurrency(product.promoPrice)}</> : formatCurrency(product.price)}</TableCell>
                 <TableCell>{product.stock ?? 'N/A'}</TableCell>
@@ -326,3 +333,4 @@ export function ManageProducts() {
     </Card>
   );
 }
+
