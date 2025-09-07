@@ -20,9 +20,10 @@ type Product = {
   promoPrice?: number;
   label?: string;
   stock?: number;
-  imageUrl: string;
+  imageUrls: string[];
   description: string;
   categoryId: string;
+  requiresShipping?: boolean;
 };
 
 type Category = {
@@ -72,9 +73,9 @@ export function PublicStore() {
       {products.map(product => (
         <Card key={product.id} className="flex flex-col overflow-hidden group">
             <div className="relative overflow-hidden">
-                <Link href="#">
+                <Link href={`/loja/${product.id}`}>
                     <Image
-                    src={product.imageUrl}
+                    src={product.imageUrls[0]}
                     alt={product.name}
                     width={400}
                     height={300}
@@ -86,7 +87,9 @@ export function PublicStore() {
                 )}
             </div>
             <CardHeader className="flex-1">
-                <CardTitle>{product.name}</CardTitle>
+                <CardTitle>
+                     <Link href={`/loja/${product.id}`} className='hover:text-primary'>{product.name}</Link>
+                </CardTitle>
                 <div
                     className="text-sm text-muted-foreground line-clamp-3"
                     dangerouslySetInnerHTML={{ __html: product.description }}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db, storage } from '@/lib/firebase';
@@ -15,25 +15,25 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, Upload, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Loader2, GripVertical } from 'lucide-react';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import TiptapEditor from '@/components/ui/tiptap-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 
 const productSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
   description: z.string().min(10, 'A descrição é muito curta.'),
-  price: z.string().refine(val => !isNaN(parseFloat(val.replace('.', '').replace(',', '.'))), { message: "O preço deve ser um número válido." }),
+  price: z.string().refine(val => !isNaN(parseCurrency(val)), { message: "O preço deve ser um número válido." }),
   promoPrice: z.string().optional(),
+  promoPrice2: z.string().optional(),
   label: z.string().optional(),
   categoryId: z.string({ required_error: "A categoria é obrigatória." }),
   stock: z.coerce.number().optional(),
   hasStock: z.boolean().default(false),
   requiresShipping: z.boolean().default(false),
-  imageUrl: z.string().url('A URL da imagem é obrigatória.'),
+  imageUrls: z.array(z.string().url()).min(1, 'Adicione pelo menos uma imagem.'),
 });
 
 type Product = {
@@ -42,7 +42,7 @@ type Product = {
   price: number;
   promoPrice?: number;
   stock?: number;
-  imageUrl: string;
+  imageUrls: string[];
 };
 
 type Category = {
@@ -72,7 +72,12 @@ export function ManageProducts() {
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, imageUrl: '' },
+    defaultValues: { name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, imageUrls: [] },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'imageUrls',
   });
 
   const hasStock = form.watch('hasStock');
@@ -102,8 +107,8 @@ export function ManageProducts() {
         const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
         const snapshot = await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(snapshot.ref);
-        form.setValue('imageUrl', downloadURL, { shouldValidate: true });
-        toast({ title: 'Sucesso', description: 'Imagem carregada.' });
+        append(downloadURL);
+        toast({ title: 'Sucesso', description: 'Imagem adicionada.' });
       } catch (error) {
         toast({ title: 'Erro de Upload', variant: 'destructive' });
       } finally {
@@ -122,6 +127,7 @@ export function ManageProducts() {
             id: product.id,
             price: formatCurrency(fullData.price),
             promoPrice: formatCurrency(fullData.promoPrice),
+            promoPrice2: formatCurrency(fullData.promoPrice2),
             hasStock: !!fullData.stock,
             requiresShipping: !!fullData.requiresShipping,
         };
@@ -141,6 +147,7 @@ export function ManageProducts() {
         ...values,
         price: parseCurrency(values.price),
         promoPrice: parseCurrency(values.promoPrice),
+        promoPrice2: parseCurrency(values.promoPrice2),
         stock: values.hasStock ? values.stock : null,
     };
     delete (dataToSave as any).hasStock;
@@ -152,12 +159,10 @@ export function ManageProducts() {
       await addDoc(collection(db, 'store_products'), { ...dataToSave, createdAt: serverTimestamp() });
       toast({ title: 'Produto Adicionado' });
     }
-    form.reset();
+    form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, imageUrls: [] });
     setEditingProduct(null);
     setIsDialogOpen(false);
   };
-  
-  const imageUrl = form.watch('imageUrl');
 
   return (
     <Card>
@@ -166,9 +171,15 @@ export function ManageProducts() {
             <CardTitle>Gerenciar Produtos</CardTitle>
             <CardDescription>Adicione e edite os produtos da sua loja.</CardDescription>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+             if (!isOpen) {
+                setEditingProduct(null);
+                form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, imageUrls: [] });
+            }
+            setIsDialogOpen(isOpen);
+        }}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingProduct(null); form.reset(); setIsDialogOpen(true); }}>
+            <Button>
               <PlusCircle className="mr-2 h-4 w-4" /> Novo Produto
             </Button>
           </DialogTrigger>
@@ -197,12 +208,15 @@ export function ManageProducts() {
                     )} />
                 </div>
 
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                     <FormField control={form.control} name="price" render={({ field }) => (
                       <FormItem><FormLabel>Preço (R$)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                      <FormField control={form.control} name="promoPrice" render={({ field }) => (
-                      <FormItem><FormLabel>Preço Promocional (R$)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel>Oferta 1 (Preço Prom.)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="promoPrice2" render={({ field }) => (
+                      <FormItem><FormLabel>Oferta 2 (Preço Prom.)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
 
@@ -233,19 +247,28 @@ export function ManageProducts() {
                     )} />
                 )}
 
-                <FormField control={form.control} name="imageUrl" render={({ field }) => (
+                <FormField control={form.control} name="imageUrls" render={() => (
                   <FormItem>
-                    <FormLabel>Imagem Principal</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-4">
-                        <Input {...field} placeholder="Cole a URL ou carregue um arquivo" />
-                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    <FormLabel>Imagens do Produto</FormLabel>
+                    <div className='p-4 border rounded-md space-y-4'>
+                        <div className='grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4'>
+                           {fields.map((field, index) => (
+                               <div key={field.id} className='relative group aspect-square'>
+                                   <Image src={field.value} alt={`Imagem ${index + 1}`} fill className='object-cover rounded-md'/>
+                                   <Button type='button' variant="destructive" size="icon" className='absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity' onClick={() => remove(index)}>
+                                        <Trash2 className='w-3 h-3'/>
+                                   </Button>
+                               </div>
+                           ))}
+                        </div>
+                        <Button type="button" variant="outline" className='w-full' onClick={() => fileInputRef.current?.click()}>
                           {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                          Carregar Imagem
                         </Button>
-                      </div>
+                    </div>
+                    <FormControl>
+                      <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
                     </FormControl>
-                    <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
-                    {imageUrl && <Image src={imageUrl} alt="Preview" width={100} height={100} className="mt-2 rounded-md object-cover" />}
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -284,7 +307,7 @@ export function ManageProducts() {
           <TableBody>
             {products.map(product => (
               <TableRow key={product.id}>
-                <TableCell><Image src={product.imageUrl} alt={product.name} width={60} height={60} className="rounded-md object-cover" /></TableCell>
+                <TableCell><Image src={product.imageUrls[0]} alt={product.name} width={60} height={60} className="rounded-md object-cover" /></TableCell>
                 <TableCell>{product.name}</TableCell>
                 <TableCell>{product.promoPrice ? <><span className='line-through text-muted-foreground'>{formatCurrency(product.price)}</span> {formatCurrency(product.promoPrice)}</> : formatCurrency(product.price)}</TableCell>
                 <TableCell>{product.stock ?? 'N/A'}</TableCell>
