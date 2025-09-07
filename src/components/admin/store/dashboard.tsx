@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DollarSign, ShoppingCart, Truck, CreditCard } from 'lucide-react';
+import { DollarSign, ShoppingCart, Truck, CreditCard, ShoppingBasket, AlertCircle } from 'lucide-react';
 
 type Order = {
     id: string;
@@ -96,6 +96,20 @@ export function StoreDashboard() {
                 value={shippingOrders}
                 description={`${formatCurrency(shippingValue)} a caminho`}
                 icon={<Truck className="h-4 w-4 text-muted-foreground" />} 
+                isLoading={loading}
+           />
+            <StatCard 
+                title="Carrinhos Ativos" 
+                value={0}
+                description="Funcionalidade em desenvolvimento"
+                icon={<ShoppingBasket className="h-4 w-4 text-muted-foreground" />} 
+                isLoading={loading}
+           />
+            <StatCard 
+                title="Carrinhos Abandonados" 
+                value={0}
+                description="Funcionalidade em desenvolvimento"
+                icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />} 
                 isLoading={loading}
            />
         </div>
