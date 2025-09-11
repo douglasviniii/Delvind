@@ -1,5 +1,9 @@
 import * as admin from 'firebase-admin';
 
+// Importa a chave de serviço diretamente do arquivo JSON.
+// Isso é mais robusto em diferentes ambientes do que depender de variáveis de ambiente que podem não ser carregadas corretamente.
+import serviceAccount from '../../../firebase-service-account.json';
+
 // Esta função garante que o SDK do Firebase Admin seja inicializado apenas uma vez.
 export function getAdminApp() {
   if (admin.apps.length > 0) {
@@ -11,21 +15,15 @@ export function getAdminApp() {
   }
 
   try {
-    // Tenta obter as credenciais da variável de ambiente.
-    // Isso é mais seguro e funciona em diferentes ambientes (local, produção).
-    const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountString) {
-      throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida.');
-    }
-    const serviceAccount = JSON.parse(serviceAccountString);
+    // Converte o objeto importado para o tipo esperado pelo SDK Admin.
+    const credential = admin.credential.cert(serviceAccount as admin.ServiceAccount);
 
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential,
     });
 
   } catch (error: any) {
     console.error('Falha na inicialização do Firebase Admin SDK.', error);
-    // Lançar o erro pode ser útil para depuração, pois impede que a aplicação continue com uma configuração inválida.
     throw new Error('Could not initialize Firebase Admin SDK: ' + error.message);
   }
 
