@@ -15,6 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
     }
 
+    // Inicializa o Admin SDK dentro da rota para garantir que as variáveis de ambiente sejam carregadas
     const adminApp = initializeAdminApp();
     const adminAuth = admin.auth(adminApp);
     const adminDb = admin.firestore(adminApp);
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('[API Create Collaborator Error]:', error);
     
+    // Retorna a mensagem de erro específica do Firebase para diagnóstico
     const errorMessage = error.message || 'Ocorreu um erro desconhecido no servidor.';
     const errorCode = error.code || 'unknown';
     
