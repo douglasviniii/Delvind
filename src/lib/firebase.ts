@@ -35,7 +35,7 @@ if (typeof window !== 'undefined') {
               // A persistência funcionará em uma das abas.
               console.warn('Falha ao habilitar persistência: múltiplas abas abertas.');
           } else if (err.code == 'unimplemented') {
-              // O navegador não suporta a persistência.
+              // O navegador não suporta a persistência offline do Firestore.
               console.warn('Seu navegador não suporta persistência offline do Firestore.');
           }
       });
