@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from "next/image";
@@ -15,6 +16,7 @@ export function LogoSpinner({ className }: LogoSpinnerProps) {
             width={24}
             height={24}
             className={cn("animate-spin", className)}
+            priority
         />
     );
 }

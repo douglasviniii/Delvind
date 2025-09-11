@@ -1,3 +1,4 @@
+
 import * as admin from 'firebase-admin';
 
 export function initializeAdminApp() {
@@ -28,4 +29,9 @@ export function initializeAdminApp() {
     console.error('Falha ao inicializar o Firebase Admin:', e.message);
     throw new Error('Não foi possível inicializar o Firebase Admin. Verifique as credenciais.');
   }
+}
+
+// Para manter compatibilidade com o webhook do Stripe
+export function getAdminApp() {
+    return { db: admin.firestore(initializeAdminApp()) };
 }

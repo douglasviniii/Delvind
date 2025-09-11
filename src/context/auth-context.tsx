@@ -5,8 +5,8 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
-import { useRouter, usePathname } from 'next/navigation';
-import { Skeleton } from '../components/ui/skeleton';
+import { useRouter } from 'next/navigation';
+import { LogoSpinner } from '../components/ui/logo-spinner';
 
 type Sector = {
     id: string;
@@ -34,11 +34,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AuthProviderSkeleton = () => (
+const FullScreenLoader = () => (
     <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="w-full h-full flex items-center justify-center">
-            <Skeleton className="h-screen w-full" />
-        </div>
+       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-white via-pink-100 to-blue-200" />
+        <LogoSpinner className="h-12 w-12 text-primary" />
     </div>
 );
 
@@ -68,7 +67,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      setLoading(true);
       if (user) {
         setUser(user);
         const userDocRef = doc(db, 'users', user.uid);
@@ -106,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? <AuthProviderSkeleton /> : children}
+      {loading ? <FullScreenLoader /> : children}
     </AuthContext.Provider>
   );
 };
@@ -123,27 +121,32 @@ export const useAuth = () => {
 export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean; collaboratorOnly?: boolean; }> = ({ children, adminOnly = false, collaboratorOnly = false }) => {
     const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
-    const pathname = usePathname();
 
     useEffect(() => {
         if (loading) return;
-
         if (!user) {
             router.replace('/login');
             return;
         }
         
+        const isCorrectRole = (adminOnly && isAdmin) || (collaboratorOnly && isCollaborator) || (!adminOnly && !collaboratorOnly);
+
         if (adminOnly && !isAdmin) {
-            router.replace(isCollaborator ? '/collaborator' : '/dashboard');
+             router.replace(isCollaborator ? '/collaborator' : '/dashboard');
         } else if (collaboratorOnly && !isCollaborator) {
-            router.replace(isAdmin ? '/admin' : '/dashboard');
+             router.replace(isAdmin ? '/admin' : '/dashboard');
         }
 
-    }, [user, loading, isAdmin, isCollaborator, adminOnly, collaboratorOnly, router, pathname]);
-
-    if (loading || !user || (adminOnly && !isAdmin) || (collaboratorOnly && !isCollaborator)) {
-        return <AuthProviderSkeleton />;
+    }, [user, loading, isAdmin, isCollaborator, adminOnly, collaboratorOnly, router]);
+    
+    if (loading || !user) {
+        return <FullScreenLoader />;
     }
+
+    // Check role access
+    if (adminOnly && !isAdmin) return <FullScreenLoader />;
+    if (collaboratorOnly && !isCollaborator) return <FullScreenLoader />;
+
 
     return <>{children}</>;
 };
@@ -164,7 +167,7 @@ export const UnprotectedRoute: React.FC<{ children: ReactNode }> = ({ children }
     }, [user, loading, isAdmin, isCollaborator, router]);
 
     if (loading || user) {
-        return <AuthProviderSkeleton />;
+        return <FullScreenLoader />;
     }
 
     return <>{children}</>;

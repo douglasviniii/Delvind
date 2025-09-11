@@ -48,7 +48,7 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 
 // Analytics (só no client-side, evita erro no SSR do Next.js)
-let analytics = null;
+let analytics: any = null;
 if (typeof window !== "undefined") {
   isSupported().then((supported) => {
     if (supported && firebaseConfig.measurementId) {

@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getAdminApp } from '@/lib/firebase-admin-init';
+import { initializeAdminApp } from '@/lib/firebase-admin-init';
 import * as admin from 'firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -15,7 +15,8 @@ export async function POST(req: Request) {
   const signature = req.headers.get('stripe-signature');
 
   let event: Stripe.Event;
-  const { db } = getAdminApp();
+  const adminApp = initializeAdminApp();
+  const db = admin.firestore(adminApp);
 
   try {
     event = stripe.webhooks.constructEvent(payload, signature!, webhookSecret);
