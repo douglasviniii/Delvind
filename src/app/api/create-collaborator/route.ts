@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
-// Importa as instâncias já inicializadas do adminAuth e adminDb
-import { adminAuth, adminDb } from '@/lib/firebase-admin-init';
+import { initializeAdminApp } from '@/lib/firebase-admin-init';
+import * as admin from 'firebase-admin';
 
 export async function POST(req: Request) {
   if (req.method !== 'POST') {
@@ -15,19 +15,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
     }
 
-    // Etapa 1: Criar o usuário no Firebase Authentication usando a instância importada
+    // Inicializa o Admin SDK dentro da rota para garantir que as variáveis de ambiente sejam carregadas
+    const adminApp = initializeAdminApp();
+    const adminAuth = admin.auth(adminApp);
+    const adminDb = admin.firestore(adminApp);
+    
     const userRecord = await adminAuth.createUser({
       email,
       password,
       displayName: name,
     });
 
-    // Etapa 2: Salvar informações adicionais no Firestore usando a instância importada
     await adminDb.collection('users').doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: userRecord.email,
       displayName: name,
-      role: 'collaborator', // Atribuir a função de colaborador
+      role: 'collaborator',
     });
 
     return NextResponse.json({ success: true, uid: userRecord.uid, name }, { status: 201 });
@@ -40,8 +43,7 @@ export async function POST(req: Request) {
     const errorCode = error.code || 'unknown';
     
     return NextResponse.json({ 
-        error: errorMessage, 
-        code: errorCode 
+        error: `[${errorCode}] ${errorMessage}`
     }, { status: 500 });
   }
 }
