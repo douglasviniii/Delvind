@@ -1,5 +1,10 @@
+
 import { NextResponse } from 'next/server';
-import { getAdminApp } from '../../../lib/firebase-admin';
+import { auth, firestore } from 'firebase-admin';
+import { initializeAdminApp } from '../../../lib/firebase-admin';
+
+// Garante que o app admin seja inicializado
+initializeAdminApp();
 
 export async function POST(req: Request) {
   if (req.method !== 'POST') {
@@ -7,27 +12,29 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { auth, db } = getAdminApp();
     const { email, password, name } = await req.json();
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
     }
 
-    const userRecord = await auth.createUser({
+    // Cria o usuário na autenticação do Firebase
+    const userRecord = await auth().createUser({
       email,
       password,
       displayName: name,
     });
 
-    await db.collection('users').doc(userRecord.uid).set({
+    // Salva os dados do usuário na coleção 'users' do Firestore
+    await firestore().collection('users').doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: userRecord.email,
       displayName: name,
-      role: 'collaborator',
+      role: 'collaborator', // Define a função como colaborador
     });
 
     return NextResponse.json({ success: true, uid: userRecord.uid, name }, { status: 201 });
+
   } catch (error: any) {
     console.error('[API Create Collaborator Error]:', error);
     
