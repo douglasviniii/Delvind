@@ -6,9 +6,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
   }
 
-  const { db, auth } = getAdminApp();
-
   try {
+    const { auth, db } = getAdminApp();
     const { email, password, name } = await req.json();
 
     // Validação básica de entrada

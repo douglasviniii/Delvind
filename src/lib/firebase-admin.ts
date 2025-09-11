@@ -11,10 +11,11 @@ export function getAdminApp() {
   }
 
   try {
-    // A inicialização buscará as credenciais automaticamente no ambiente do App Hosting
-    // ou através da variável de ambiente GOOGLE_APPLICATION_CREDENTIALS no desenvolvimento local.
-    admin.initializeApp();
-    console.log('Firebase Admin SDK initialized successfully.');
+    const serviceAccount = require('../../../firebase-service-account.json');
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('Firebase Admin SDK initialized successfully with service account.');
   } catch (error) {
     console.error('Falha na inicialização do Firebase Admin SDK.', error);
     // Lançar o erro pode ser útil para depuração, pois impede que a aplicação continue com uma configuração inválida.
