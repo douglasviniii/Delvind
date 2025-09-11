@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { initializeAdminApp } from '@/lib/firebase-admin-init';
 import * as admin from 'firebase-admin';
@@ -12,14 +11,17 @@ export async function POST(req: Request) {
     const { email, password, name } = await req.json();
 
     if (!email || !password || !name) {
-      return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Campos obrigatórios ausentes.' },
+        { status: 400 },
+      );
     }
 
-    // Inicializa o Admin SDK dentro da rota para garantir que as variáveis de ambiente sejam carregadas
+    // Inicializa o Admin SDK dentro da rota
     const adminApp = initializeAdminApp();
     const adminAuth = admin.auth(adminApp);
     const adminDb = admin.firestore(adminApp);
-    
+
     const userRecord = await adminAuth.createUser({
       email,
       password,
@@ -33,17 +35,20 @@ export async function POST(req: Request) {
       role: 'collaborator',
     });
 
-    return NextResponse.json({ success: true, uid: userRecord.uid, name }, { status: 201 });
+    return NextResponse.json(
+      { success: true, uid: userRecord.uid, name },
+      { status: 201 },
+    );
 
   } catch (error: any) {
     console.error('[API Create Collaborator Error]:', error);
-    
-    // Retorna a mensagem de erro específica do Firebase para diagnóstico
+
     const errorMessage = error.message || 'Ocorreu um erro desconhecido no servidor.';
     const errorCode = error.code || 'unknown';
-    
-    return NextResponse.json({ 
-        error: `[${errorCode}] ${errorMessage}`
-    }, { status: 500 });
+
+    return NextResponse.json(
+      { error: `[${errorCode}] ${errorMessage}` },
+      { status: 500 },
+    );
   }
 }

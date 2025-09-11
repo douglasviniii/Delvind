@@ -8,13 +8,13 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Configuração do Firebase lida a partir das variáveis de ambiente
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
   authDomain: "venda-fcil-pdv.firebaseapp.com",
   projectId: "venda-fcil-pdv",
   storageBucket: "venda-fcil-pdv.appspot.com",
-  messagingSenderId: "331828036239",
-  appId: "1:331828036239:web:9c211516e885443269d519",
-  measurementId: "G-Z11J7323E4"
+  messagingSenderId: "114570788878",
+  appId: "1:114570788878:web:1e3fa51754f3ae6862fc5f",
+  measurementId: "G-792KHTQP7R"
 };
 
 

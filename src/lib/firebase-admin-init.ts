@@ -18,9 +18,13 @@ export function initializeAdminApp() {
     const serviceAccount = JSON.parse(serviceAccountString);
 
     // Inicializa o app com as credenciais e um nome único
-    return admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    }, 'admin'); // Nomeia a instância para evitar conflitos
+    return admin.initializeApp(
+      {
+        credential: admin.credential.cert(serviceAccount),
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      },
+      'admin', // Nome da instância para evitar conflitos
+    );
 
   } catch (e: any) {
     console.error('Falha ao analisar a FIREBASE_SERVICE_ACCOUNT_KEY:', e.message);
