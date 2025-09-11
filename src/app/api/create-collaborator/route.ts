@@ -34,6 +34,6 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('Error creating new user:', error);
     // Retorna a mensagem de erro específica do Firebase para o cliente
-    return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Ocorreu um erro desconhecido.', code: error.code }, { status: 500 });
   }
 }

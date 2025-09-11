@@ -11,15 +11,20 @@ export function getAdminApp() {
   }
 
   try {
-    const serviceAccount = require('../../../firebase-service-account.json');
+    // A forma mais segura de carregar as credenciais em diferentes ambientes.
+    const serviceAccount = JSON.parse(
+      process.env.FIREBASE_SERVICE_ACCOUNT_KEY || 
+      JSON.stringify(require('../../../firebase-service-account.json'))
+    );
+    
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
-    console.log('Firebase Admin SDK initialized successfully with service account.');
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('Falha na inicialização do Firebase Admin SDK.', error);
     // Lançar o erro pode ser útil para depuração, pois impede que a aplicação continue com uma configuração inválida.
-    throw new Error('Could not initialize Firebase Admin SDK.');
+    throw new Error('Could not initialize Firebase Admin SDK: ' + error.message);
   }
 
   return {
