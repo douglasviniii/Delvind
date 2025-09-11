@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { initializeAdminApp } from '@/lib/firebase-admin-init';
 import * as admin from 'firebase-admin';
@@ -18,7 +17,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Inicializa o Admin SDK para garantir que as credenciais corretas sejam usadas.
+    // Inicializa o Admin SDK de forma segura
     const adminApp = initializeAdminApp();
     const adminAuth = admin.auth(adminApp);
     const adminDb = admin.firestore(adminApp);
@@ -52,19 +51,20 @@ export async function POST(req: Request) {
     const errorCode = error.code || 'unknown-error';
     
     // Constrói uma mensagem mais amigável para erros comuns
-    let friendlyMessage = errorMessage;
+    let friendlyMessage = `[${errorCode}] ${errorMessage}`;
     if (errorCode === 'auth/email-already-exists') {
         friendlyMessage = 'Este e-mail já está em uso por outra conta.';
     } else if (errorCode === 'auth/invalid-password') {
         friendlyMessage = 'A senha fornecida é inválida. Deve ter pelo menos 6 caracteres.';
     } else if (errorCode === 'auth/invalid-credential') {
         friendlyMessage = 'As credenciais de administrador do servidor são inválidas. Verifique a configuração do Firebase.';
+    } else if (errorCode === 'PERMISSION_DENIED') {
+        friendlyMessage = 'Permissão negada pelo Firestore. Verifique suas regras de segurança.';
     }
 
     return NextResponse.json(
       { 
-        error: friendlyMessage,
-        details: `[${errorCode}]`
+        error: friendlyMessage
       }, 
       { status: 500 }
     );
