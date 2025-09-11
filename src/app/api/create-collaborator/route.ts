@@ -1,6 +1,7 @@
+
 import { NextResponse } from 'next/server';
-import { getAdminApp } from '../../../lib/firebase-admin';
-import { auth as adminAuth, firestore as adminFirestore } from 'firebase-admin';
+import { getAdminApp } from '@/lib/firebase-admin-init';
+import * as admin from 'firebase-admin';
 
 export async function POST(req: Request) {
   if (req.method !== 'POST') {
@@ -8,30 +9,24 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Garante que o app admin está inicializado
-    const adminApp = getAdminApp();
-    const auth = adminAuth(adminApp);
-    const firestore = adminFirestore(adminApp);
-
+    const { auth, db } = getAdminApp();
     const { email, password, name } = await req.json();
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
     }
 
-    // Cria o usuário na autenticação do Firebase
     const userRecord = await auth.createUser({
       email,
       password,
       displayName: name,
     });
 
-    // Salva os dados do usuário na coleção 'users' do Firestore
-    await firestore.collection('users').doc(userRecord.uid).set({
+    await db.collection('users').doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: userRecord.email,
       displayName: name,
-      role: 'collaborator', // Define a função como colaborador
+      role: 'collaborator',
     });
 
     return NextResponse.json({ success: true, uid: userRecord.uid, name }, { status: 201 });
@@ -39,8 +34,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('[API Create Collaborator Error]:', error);
     
-    // Retorna a mensagem de erro específica do Firebase para o cliente
-    let errorMessage = 'Ocorreu um erro desconhecido no servidor. Verifique o console do servidor para mais detalhes.';
+    let errorMessage = error.message || 'Ocorreu um erro desconhecido no servidor.';
     if (error.code) {
         switch (error.code) {
             case 'auth/email-already-exists':
@@ -49,9 +43,6 @@ export async function POST(req: Request) {
             case 'auth/invalid-password':
                 errorMessage = 'A senha é inválida. Deve ter pelo menos 6 caracteres.';
                 break;
-            case 'app/invalid-credential':
-                 errorMessage = 'Erro de credencial no servidor. Contate o suporte.';
-                 break;
             default:
                  errorMessage = `Erro do Firebase: ${error.message} (código: ${error.code})`;
         }
