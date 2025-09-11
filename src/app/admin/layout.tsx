@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from "../../components/ui/button";
 import { useAuth, ProtectedRoute } from "../../context/auth-context";
 import { auth, db } from "../../lib/firebase";
@@ -99,13 +98,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             if (item.href === "/admin") {
                 return pathname === "/admin";
             }
-            if (item.href === "/admin/chat") {
-                return pathname.startsWith(item.href);
-            }
-            return pathname.startsWith(item.href);
+            return pathname.startsWith(item.href) && item.href !== "/admin";
         });
         return currentItem?.label || 'Painel de Administração';
     }, [pathname]);
+
 
     const userInitial = user?.displayName?.[0] || user?.email?.[0] || 'A';
 
@@ -115,15 +112,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             <nav className={cn("grid items-start text-sm font-medium", className)}>
                 {navItems.map((item) => {
                      const hasNotification = item.notificationKey && notifications[item.notificationKey as keyof typeof notifications];
+                    const isActive = (item.href === "/admin" && pathname === "/admin") || (item.href !== "/admin" && pathname.startsWith(item.href));
                     return (
                         <Link
                             key={item.label}
                             href={item.href}
                             className={cn(
                                 "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                                pathname.startsWith(item.href) && item.href !== "/admin" && "bg-muted text-primary",
-                                pathname === "/admin" && item.href === "/admin" && "bg-muted text-primary",
-                                item.label === 'Chat' && pathname.startsWith('/admin/chat') && "bg-muted text-primary" // Special case for chat
+                                isActive && "bg-muted text-primary"
                             )}
                         >
                             <div className="flex items-center gap-3">

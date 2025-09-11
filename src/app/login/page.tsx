@@ -66,20 +66,17 @@ function LoginPageContent() {
 
       const user = userCredential.user;
       
-      // Admin check
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
       if (user.email === 'admin@delvind.com') {
         router.push('/admin');
         return;
       }
       
-      // Check for collaborator role from Firestore
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
       if (userDoc.exists() && userDoc.data().role === 'collaborator') {
           router.push('/collaborator');
       } else {
-         // Fallback for regular customer users
          router.push('/dashboard');
       }
 

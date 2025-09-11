@@ -23,7 +23,7 @@ import {
 import { Logo } from '../../components/layout/logo';
 import { cn } from '../../lib/utils';
 import { ChatWidget } from '../../components/layout/chat-widget';
-import { collection, onSnapshot, query, where, collectionGroup } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { useCart } from '@/context/cart-context';
 
 
@@ -63,29 +63,27 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         return pathname.startsWith(item.href);
     });
     return currentItem?.label || 'Painel do Cliente';
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [pathname, navItems]);
 
   useEffect(() => {
-    // Ensure user and user.uid exist before proceeding
-    if (!user || !user.uid) return;
+    if (!user) return;
 
     const listeners = [
         { key: 'budgets', collection: 'budgets', field: 'clientId', value: user.uid, extraQuery: where('status', '==', 'Pendente') },
         { key: 'payments', collection: 'finance', field: 'clientId', value: user.uid, extraQuery: where('status', '==', 'Cobrança Enviada') },
         { key: 'receipts', collection: 'receipts', field: 'clientId', value: user.uid, extraQuery: where('viewedByClient', '==', false) },
         { key: 'contracts', collection: 'contracts', field: 'clientId', value: user.uid, extraQuery: where('status', '==', 'Aguardando Assinatura') },
-        { key: 'documents', collectionGroup: 'documents', field: 'sharedWith', arrayContains: user.uid }
+        { key: 'documents', collection: 'documents', field: 'sharedWith', arrayContains: user.uid }
     ];
 
-    const unsubscribers = listeners.map(({ key, collection: col, collectionGroup: colGroup, field, value, extraQuery, arrayContains }) => {
-        if (!value) return () => {}; // Extra safety check for value
+    const unsubscribers = listeners.map(({ key, collection: col, field, value, extraQuery, arrayContains }) => {
+        if (!value) return () => {};
         
         let q;
-        if (colGroup) {
-            q = query(collectionGroup(db, colGroup), where(field!, 'array-contains', value));
+        if(arrayContains) {
+            q = query(collection(db, col!), where(field, 'array-contains', value));
         } else {
-            q = query(collection(db, col!), where(field!, '==', value), extraQuery);
+            q = query(collection(db, col!), where(field, '==', value), extraQuery);
         }
         
         return onSnapshot(q, (snapshot) => {
@@ -113,10 +111,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     <>
       {navItems.map((item) => {
         const hasNotification = item.notificationKey && notifications[item.notificationKey as keyof typeof notifications];
+        const isActive = (item.href === "/dashboard" && pathname === "/dashboard") || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+        
         const linkContent = (
             <Button
                 asChild
-                variant={pathname.startsWith(item.href) && item.href !== '/dashboard' ? 'secondary' : (pathname === '/dashboard' && item.href === '/dashboard' ? 'secondary' : 'ghost')}
+                variant={isActive ? 'secondary' : 'ghost'}
                 className="w-full justify-start relative"
             >
                 <Link href={item.href}>

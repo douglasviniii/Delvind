@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '../components/ui/skeleton';
 
@@ -32,31 +32,13 @@ interface AuthContextType {
   setSelectedSector: (sector: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  isAdmin: false,
-  isCollaborator: false,
-  sectors: [],
-  selectedSector: 'geral',
-  setSelectedSector: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AuthProviderSkeleton = () => (
     <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="space-y-4 w-full max-w-md p-4">
-        <div className="flex items-center space-x-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="space-y-2">
-                <Skeleton className="h-4 w-[250px]" />
-                <Skeleton className="h-4 w-[200px]" />
-            </div>
+        <div className="w-full h-full flex items-center justify-center">
+            <Skeleton className="h-screen w-full" />
         </div>
-        <Skeleton className="h-40 w-full" />
-        <div className="flex justify-end">
-            <Skeleton className="h-10 w-24" />
-        </div>
-      </div>
     </div>
 );
 
@@ -85,15 +67,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
       if (user) {
+        setUser(user);
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         
         const isAdminUser = user.email === 'admin@delvind.com';
         const isCollaboratorUser = userDoc.exists() && userDoc.data().role === 'collaborator';
-
-        setUser(user);
+        
         setIsAdmin(isAdminUser);
         setIsCollaborator(isCollaboratorUser);
       } else {
@@ -104,18 +87,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    const fetchSectors = async () => {
-        const settingsDocRef = doc(db, 'app_settings', 'chat_sectors');
-        const docSnap = await getDoc(settingsDocRef);
-        if (docSnap.exists() && docSnap.data().sectors) {
-            setSectors(docSnap.data().sectors);
-        } else {
-            setSectors(defaultSectors);
-        }
-    };
-    fetchSectors();
+    const settingsDocRef = doc(db, 'app_settings', 'chat_sectors');
+    const unsubscribeSectors = onSnapshot(settingsDocRef, (docSnap) => {
+      if (docSnap.exists() && docSnap.data().sectors) {
+        setSectors(docSnap.data().sectors);
+      } else {
+        setSectors(defaultSectors);
+      }
+    });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      unsubscribeSectors();
+    };
   }, []);
 
   const value = { user, loading, isAdmin, isCollaborator, sectors, selectedSector, setSelectedSector: handleSetSelectedSector };
@@ -135,67 +119,11 @@ export const useAuth = () => {
   return context;
 };
 
-const withProtection = (Component: React.ComponentType<any>, options: { adminOnly?: boolean; collaboratorOnly?: boolean; unprotected?: boolean }) => {
-  return function ProtectedComponent(props: any) {
-    const { user, loading, isAdmin, isCollaborator } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    useEffect(() => {
-        if (loading || !isClient) return;
-
-        const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
-
-        if (options.unprotected) {
-            if (user) {
-                if (isAdmin) router.replace('/admin');
-                else if (isCollaborator) router.replace('/collaborator');
-                else router.replace('/dashboard');
-            }
-            return;
-        }
-
-        if (!user) {
-            if (!isAuthPage) router.replace('/login');
-            return;
-        }
-
-        if (options.adminOnly && !isAdmin) {
-             router.replace(isCollaborator ? '/collaborator' : '/dashboard');
-        } else if (options.collaboratorOnly && !isCollaborator) {
-             router.replace(isAdmin ? '/admin' : '/dashboard');
-        } else if (!options.adminOnly && !options.collaboratorOnly && (isAdmin || isCollaborator)) {
-            // This is for the customer dashboard
-            router.replace(isAdmin ? '/admin' : '/collaborator');
-        }
-
-    }, [user, loading, isClient, isAdmin, isCollaborator, router, pathname]);
-
-    if (loading) {
-        return <AuthProviderSkeleton />;
-    }
-
-    if (options.unprotected && user) {
-        return <AuthProviderSkeleton />;
-    }
-
-    if (!options.unprotected && !user) {
-        return <AuthProviderSkeleton />;
-    }
-
-    // Render the component if authorization checks pass
-    return <Component {...props} />;
-  };
-};
-
+// Componente para proteger rotas que exigem autenticação
 export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean; collaboratorOnly?: boolean; }> = ({ children, adminOnly = false, collaboratorOnly = false }) => {
     const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (loading) return;
@@ -206,12 +134,12 @@ export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean
         }
         
         if (adminOnly && !isAdmin) {
-            router.replace('/dashboard'); // Or a dedicated access-denied page
+            router.replace(isCollaborator ? '/collaborator' : '/dashboard');
         } else if (collaboratorOnly && !isCollaborator) {
-            router.replace('/dashboard');
+            router.replace(isAdmin ? '/admin' : '/dashboard');
         }
 
-    }, [user, loading, isAdmin, isCollaborator, adminOnly, collaboratorOnly, router]);
+    }, [user, loading, isAdmin, isCollaborator, adminOnly, collaboratorOnly, router, pathname]);
 
     if (loading || !user || (adminOnly && !isAdmin) || (collaboratorOnly && !isCollaborator)) {
         return <AuthProviderSkeleton />;
@@ -220,6 +148,7 @@ export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean
     return <>{children}</>;
 };
 
+// Componente para páginas que não devem ser acessadas se o usuário já estiver logado
 export const UnprotectedRoute: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
