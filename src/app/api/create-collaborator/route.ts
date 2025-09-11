@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
-import { auth, db } from '../../../lib/firebase-admin';
-
+import { getAdminApp } from '../../../lib/firebase-admin';
 
 export async function POST(req: Request) {
   if (req.method !== 'POST') {
     return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
   }
 
+  const { db, auth } = getAdminApp();
+
   try {
     const { email, password, name } = await req.json();
+
+    // Validação básica de entrada
+    if (!email || !password || !name) {
+      return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
+    }
 
     // Cria usuário no Firebase Auth
     const userRecord = await auth.createUser({
@@ -25,15 +31,10 @@ export async function POST(req: Request) {
       role: 'collaborator',
     });
 
-    return NextResponse.json({ success: true, name }, { status: 201 });
+    return NextResponse.json({ success: true, uid: userRecord.uid, name }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating new user:', error);
-    let errorMessage = 'Ocorreu um erro desconhecido.';
-    if (error.code === 'auth/email-already-exists') {
-        errorMessage = 'Este e-mail já está em uso por outra conta.';
-    } else if (error.code === 'auth/invalid-credential' || error.code?.includes('credential')) {
-        errorMessage = 'Erro de credencial no servidor. Verifique a configuração do Firebase Admin.';
-    }
-    return NextResponse.json({ error: errorMessage, code: error.code }, { status: 500 });
+    // Retorna a mensagem de erro específica do Firebase para o cliente
+    return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
   }
 }
