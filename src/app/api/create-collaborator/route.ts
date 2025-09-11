@@ -1,5 +1,6 @@
 
 import { NextResponse } from 'next/server';
+// Importa as instâncias já inicializadas do adminAuth e adminDb
 import { adminAuth, adminDb } from '@/lib/firebase-admin-init';
 
 export async function POST(req: Request) {
@@ -14,14 +15,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
     }
 
-    // Etapa 1: Criar o usuário no Firebase Authentication
+    // Etapa 1: Criar o usuário no Firebase Authentication usando a instância importada
     const userRecord = await adminAuth.createUser({
       email,
       password,
       displayName: name,
     });
 
-    // Etapa 2: Salvar informações adicionais no Firestore
+    // Etapa 2: Salvar informações adicionais no Firestore usando a instância importada
     await adminDb.collection('users').doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: userRecord.email,
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('[API Create Collaborator Error]:', error);
     
-    // Retorna a mensagem de erro específica do Firebase
+    // Retorna a mensagem de erro específica do Firebase para diagnóstico
     const errorMessage = error.message || 'Ocorreu um erro desconhecido no servidor.';
     const errorCode = error.code || 'unknown';
     
