@@ -1,10 +1,10 @@
 
 import { NextResponse } from 'next/server';
+import { getAdminApp } from '../../../lib/firebase-admin';
 import { auth, firestore } from 'firebase-admin';
-import { initializeAdminApp } from '../../../lib/firebase-admin';
 
-// Garante que o app admin seja inicializado
-initializeAdminApp();
+// Inicializa o app admin para esta rota
+getAdminApp();
 
 export async function POST(req: Request) {
   if (req.method !== 'POST') {
@@ -39,8 +39,22 @@ export async function POST(req: Request) {
     console.error('[API Create Collaborator Error]:', error);
     
     // Retorna a mensagem de erro específica do Firebase para o cliente
+    let errorMessage = 'Ocorreu um erro desconhecido no servidor. Verifique o console do servidor para mais detalhes.';
+    if (error.code) {
+        switch (error.code) {
+            case 'auth/email-already-exists':
+                errorMessage = 'Este e-mail já está em uso por outra conta.';
+                break;
+            case 'auth/invalid-password':
+                errorMessage = 'A senha é inválida. Deve ter pelo menos 6 caracteres.';
+                break;
+            default:
+                 errorMessage = `Erro do Firebase: ${error.message} (código: ${error.code})`;
+        }
+    }
+    
     return NextResponse.json({ 
-        error: error.message || 'Ocorreu um erro desconhecido no servidor.', 
+        error: errorMessage, 
         code: error.code 
     }, { status: 500 });
   }
