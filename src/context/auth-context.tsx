@@ -5,7 +5,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { LogoSpinner } from '../components/ui/logo-spinner';
 
 type Sector = {
@@ -67,8 +67,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      setUser(user);
       if (user) {
-        setUser(user);
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         
@@ -78,7 +78,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAdmin(isAdminUser);
         setIsCollaborator(isCollaboratorUser);
       } else {
-        setUser(null);
         setIsAdmin(false);
         setIsCollaborator(false);
       }
@@ -104,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? <FullScreenLoader /> : children}
+      {children}
     </AuthContext.Provider>
   );
 };
@@ -121,32 +120,48 @@ export const useAuth = () => {
 export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean; collaboratorOnly?: boolean; }> = ({ children, adminOnly = false, collaboratorOnly = false }) => {
     const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
-    useEffect(() => {
-        if (loading) return;
-        if (!user) {
-            router.replace('/login');
-            return;
-        }
-        
-        const isCorrectRole = (adminOnly && isAdmin) || (collaboratorOnly && isCollaborator) || (!adminOnly && !collaboratorOnly);
-
-        if (adminOnly && !isAdmin) {
-             router.replace(isCollaborator ? '/collaborator' : '/dashboard');
-        } else if (collaboratorOnly && !isCollaborator) {
-             router.replace(isAdmin ? '/admin' : '/dashboard');
-        }
-
-    }, [user, loading, isAdmin, isCollaborator, adminOnly, collaboratorOnly, router]);
-    
-    if (loading || !user) {
+    if (loading) {
         return <FullScreenLoader />;
     }
 
-    // Check role access
-    if (adminOnly && !isAdmin) return <FullScreenLoader />;
-    if (collaboratorOnly && !isCollaborator) return <FullScreenLoader />;
+    if (!user) {
+        if (typeof window !== 'undefined') {
+            router.replace('/login');
+        }
+        return <FullScreenLoader />;
+    }
+    
+    if (adminOnly && !isAdmin) {
+        if (typeof window !== 'undefined') {
+            router.replace(isCollaborator ? '/collaborator' : '/dashboard');
+        }
+        return <FullScreenLoader />;
+    }
 
+    if (collaboratorOnly && !isCollaborator) {
+         if (typeof window !== 'undefined') {
+            router.replace(isAdmin ? '/admin' : '/dashboard');
+        }
+        return <FullScreenLoader />;
+    }
+
+    // Se o usuário está na página de admin mas não é admin, redireciona
+    if (pathname.startsWith('/admin') && !isAdmin) {
+      if (typeof window !== 'undefined') {
+        router.replace(isCollaborator ? '/collaborator' : '/dashboard');
+      }
+      return <FullScreenLoader />;
+    }
+
+    // Se o usuário está na página de colaborador mas não é colaborador
+    if (pathname.startsWith('/collaborator') && !isCollaborator) {
+      if (typeof window !== 'undefined') {
+        router.replace(isAdmin ? '/admin' : '/dashboard');
+      }
+      return <FullScreenLoader />;
+    }
 
     return <>{children}</>;
 };
@@ -156,17 +171,16 @@ export const UnprotectedRoute: React.FC<{ children: ReactNode }> = ({ children }
     const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
 
-    useEffect(() => {
-        if (loading) return;
+    if (loading) {
+        return <FullScreenLoader />;
+    }
 
-        if (user) {
+    if (user) {
+         if (typeof window !== 'undefined') {
             if (isAdmin) router.replace('/admin');
             else if (isCollaborator) router.replace('/collaborator');
             else router.replace('/dashboard');
         }
-    }, [user, loading, isAdmin, isCollaborator, router]);
-
-    if (loading || user) {
         return <FullScreenLoader />;
     }
 
