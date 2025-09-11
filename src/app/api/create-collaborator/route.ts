@@ -1,7 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getAdminApp } from '@/lib/firebase-admin-init';
-import * as admin from 'firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin-init';
 
 export async function POST(req: Request) {
   if (req.method !== 'POST') {
@@ -9,24 +8,25 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { auth, db } = getAdminApp();
     const { email, password, name } = await req.json();
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
     }
 
-    const userRecord = await auth.createUser({
+    // Etapa 1: Criar o usuário no Firebase Authentication
+    const userRecord = await adminAuth.createUser({
       email,
       password,
       displayName: name,
     });
 
-    await db.collection('users').doc(userRecord.uid).set({
+    // Etapa 2: Salvar informações adicionais no Firestore
+    await adminDb.collection('users').doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: userRecord.email,
       displayName: name,
-      role: 'collaborator',
+      role: 'collaborator', // Atribuir a função de colaborador
     });
 
     return NextResponse.json({ success: true, uid: userRecord.uid, name }, { status: 201 });
@@ -34,23 +34,13 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('[API Create Collaborator Error]:', error);
     
-    let errorMessage = error.message || 'Ocorreu um erro desconhecido no servidor.';
-    if (error.code) {
-        switch (error.code) {
-            case 'auth/email-already-exists':
-                errorMessage = 'Este e-mail já está em uso por outra conta.';
-                break;
-            case 'auth/invalid-password':
-                errorMessage = 'A senha é inválida. Deve ter pelo menos 6 caracteres.';
-                break;
-            default:
-                 errorMessage = `Erro do Firebase: ${error.message} (código: ${error.code})`;
-        }
-    }
+    // Retorna a mensagem de erro específica do Firebase
+    const errorMessage = error.message || 'Ocorreu um erro desconhecido no servidor.';
+    const errorCode = error.code || 'unknown';
     
     return NextResponse.json({ 
         error: errorMessage, 
-        code: error.code 
+        code: errorCode 
     }, { status: 500 });
   }
 }

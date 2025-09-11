@@ -2,37 +2,34 @@
 import * as admin from 'firebase-admin';
 
 let app: admin.app.App;
-let auth: admin.auth.Auth;
-let db: admin.firestore.Firestore;
 
 function initializeAdminApp() {
   if (admin.apps.length > 0) {
     app = admin.app();
-  } else {
-    const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-    if (!serviceAccountString) {
-      throw new Error('The FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
-    }
-
-    try {
-      const serviceAccount = JSON.parse(serviceAccountString);
-      app = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
-    } catch (e: any) {
-      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e.message);
-      throw new Error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it is a valid JSON string.');
-    }
+    return;
   }
 
-  auth = admin.auth(app);
-  db = admin.firestore(app);
+  const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+  if (!serviceAccountString) {
+    throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida.');
+  }
+
+  try {
+    const serviceAccount = JSON.parse(serviceAccountString);
+    app = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+  } catch (e: any) {
+    console.error('Falha ao analisar FIREBASE_SERVICE_ACCOUNT_KEY:', e.message);
+    throw new Error('Falha ao analisar FIREBASE_SERVICE_ACCOUNT_KEY. Certifique-se de que é uma string JSON válida.');
+  }
 }
 
-export function getAdminApp() {
-  if (!app) {
+// Garante que a inicialização aconteça apenas uma vez.
+if (!admin.apps.length) {
     initializeAdminApp();
-  }
-  return { app, auth, db };
 }
+
+export const adminAuth = admin.auth();
+export const adminDb = admin.firestore();
