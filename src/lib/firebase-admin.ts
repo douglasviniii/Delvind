@@ -11,13 +11,7 @@ export function getAdminApp() {
   }
 
   try {
-    // A forma mais segura de carregar as credenciais em diferentes ambientes.
-    const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountString) {
-        throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida.');
-    }
-    const serviceAccount = JSON.parse(serviceAccountString);
-    
+    const serviceAccount = require('../../../firebase-service-account.json');
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
