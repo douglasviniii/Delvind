@@ -17,7 +17,6 @@ const firebaseConfig = {
   measurementId: "G-792KHTQP7R"
 };
 
-
 // Inicializa o Firebase (garante que só inicializa uma vez)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 

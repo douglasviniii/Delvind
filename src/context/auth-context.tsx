@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc } from "firebase/firestore";
@@ -27,7 +27,6 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isCollaborator: boolean;
-  rolesChecked: boolean;
   sectors: Sector[];
   selectedSector: string;
   setSelectedSector: (sector: string) => void;
@@ -38,7 +37,6 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isAdmin: false,
   isCollaborator: false,
-  rolesChecked: false,
   sectors: [],
   selectedSector: 'geral',
   setSelectedSector: () => {},
@@ -62,17 +60,14 @@ const AuthProviderSkeleton = () => (
     </div>
 );
 
-
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCollaborator, setIsCollaborator] = useState(false);
-  const [rolesChecked, setRolesChecked] = useState(false);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [selectedSector, setSelectedSector] = useState<string>('geral');
 
-  
   const handleSetSelectedSector = (sector: string) => {
     setSelectedSector(sector);
     if (typeof window !== 'undefined') {
@@ -87,35 +82,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setSelectedSector(savedSector);
         }
     }
-  }, [])
-
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true);
-      setRolesChecked(false);
       if (user) {
-        setUser(user);
-        const admin = user.email === 'admin@delvind.com';
-        setIsAdmin(admin);
-
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists() && userDoc.data().role === 'collaborator') {
-          setIsCollaborator(true);
-        } else {
-          setIsCollaborator(false);
-        }
+        
+        const isAdminUser = user.email === 'admin@delvind.com';
+        const isCollaboratorUser = userDoc.exists() && userDoc.data().role === 'collaborator';
+
+        setUser(user);
+        setIsAdmin(isAdminUser);
+        setIsCollaborator(isCollaboratorUser);
       } else {
         setUser(null);
         setIsAdmin(false);
         setIsCollaborator(false);
       }
-      setRolesChecked(true);
       setLoading(false);
     });
-    
-    // Fetch chat sectors settings
+
     const fetchSectors = async () => {
         const settingsDocRef = doc(db, 'app_settings', 'chat_sectors');
         const docSnap = await getDoc(settingsDocRef);
@@ -130,7 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const value = { user, loading, isAdmin, isCollaborator, rolesChecked, sectors, selectedSector, setSelectedSector: handleSetSelectedSector };
+  const value = { user, loading, isAdmin, isCollaborator, sectors, selectedSector, setSelectedSector: handleSetSelectedSector };
 
   return (
     <AuthContext.Provider value={value}>
@@ -139,80 +127,116 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
-
-export const ProtectedRoute = ({ children, adminOnly = false, collaboratorOnly = false }: { children: React.ReactNode, adminOnly?: boolean, collaboratorOnly?: boolean }) => {
-    const { user, loading, isAdmin, isCollaborator, rolesChecked } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-    const [isAuthorized, setIsAuthorized] = useState(false);
-
-    useEffect(() => {
-      if (loading || !rolesChecked) return;
-  
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      
-      let hasAccess = false;
-      let redirectPath: string | null = null;
-      
-      // Special case: allow collaborators to access the admin chat page
-      if (pathname.startsWith('/admin/chat') && (isAdmin || isCollaborator)) {
-          hasAccess = true;
-      } else if (adminOnly) {
-          if (isAdmin) hasAccess = true;
-          else redirectPath = isCollaborator ? '/collaborator' : '/dashboard';
-      } else if (collaboratorOnly) {
-          if (isCollaborator) hasAccess = true;
-          else redirectPath = isAdmin ? '/admin' : '/dashboard';
-      } else { // Just needs to be a logged-in customer
-          if (!isAdmin && !isCollaborator) hasAccess = true;
-          else redirectPath = isAdmin ? '/admin' : '/collaborator';
-      }
-
-      if (hasAccess) {
-        setIsAuthorized(true);
-      } else if (redirectPath) {
-        router.push(redirectPath);
-      }
-
-    }, [user, loading, rolesChecked, adminOnly, collaboratorOnly, isAdmin, isCollaborator, pathname, router]);
-  
-    if (isAuthorized) {
-        return <>{children}</>;
-    }
-    
-    return <AuthProviderSkeleton />;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
-export const UnprotectedRoute = ({ children }: { children: React.ReactNode }) => {
-    const { user, loading, isAdmin, isCollaborator, rolesChecked } = useAuth();
+const withProtection = (Component: React.ComponentType<any>, options: { adminOnly?: boolean; collaboratorOnly?: boolean; unprotected?: boolean }) => {
+  return function ProtectedComponent(props: any) {
+    const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-      setIsClient(true);
+        setIsClient(true);
     }, []);
-  
+
     useEffect(() => {
-        if (!isClient || loading || !rolesChecked) return;
-  
-        if (user) {
-            if (isAdmin) {
-                router.push('/admin');
-            } else if (isCollaborator) {
-                router.push('/collaborator');
-            } else {
-                router.push('/dashboard');
+        if (loading || !isClient) return;
+
+        const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
+
+        if (options.unprotected) {
+            if (user) {
+                if (isAdmin) router.replace('/admin');
+                else if (isCollaborator) router.replace('/collaborator');
+                else router.replace('/dashboard');
             }
+            return;
         }
-    }, [user, loading, rolesChecked, isAdmin, isCollaborator, isClient, router]);
-  
-    if (!isClient || user || loading) {
+
+        if (!user) {
+            if (!isAuthPage) router.replace('/login');
+            return;
+        }
+
+        if (options.adminOnly && !isAdmin) {
+             router.replace(isCollaborator ? '/collaborator' : '/dashboard');
+        } else if (options.collaboratorOnly && !isCollaborator) {
+             router.replace(isAdmin ? '/admin' : '/dashboard');
+        } else if (!options.adminOnly && !options.collaboratorOnly && (isAdmin || isCollaborator)) {
+            // This is for the customer dashboard
+            router.replace(isAdmin ? '/admin' : '/collaborator');
+        }
+
+    }, [user, loading, isClient, isAdmin, isCollaborator, router, pathname]);
+
+    if (loading) {
         return <AuthProviderSkeleton />;
     }
-  
+
+    if (options.unprotected && user) {
+        return <AuthProviderSkeleton />;
+    }
+
+    if (!options.unprotected && !user) {
+        return <AuthProviderSkeleton />;
+    }
+
+    // Render the component if authorization checks pass
+    return <Component {...props} />;
+  };
+};
+
+export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean; collaboratorOnly?: boolean; }> = ({ children, adminOnly = false, collaboratorOnly = false }) => {
+    const { user, loading, isAdmin, isCollaborator } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (loading) return;
+
+        if (!user) {
+            router.replace('/login');
+            return;
+        }
+        
+        if (adminOnly && !isAdmin) {
+            router.replace('/dashboard'); // Or a dedicated access-denied page
+        } else if (collaboratorOnly && !isCollaborator) {
+            router.replace('/dashboard');
+        }
+
+    }, [user, loading, isAdmin, isCollaborator, adminOnly, collaboratorOnly, router]);
+
+    if (loading || !user || (adminOnly && !isAdmin) || (collaboratorOnly && !isCollaborator)) {
+        return <AuthProviderSkeleton />;
+    }
+
     return <>{children}</>;
-}
+};
+
+export const UnprotectedRoute: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { user, loading, isAdmin, isCollaborator } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (loading) return;
+
+        if (user) {
+            if (isAdmin) router.replace('/admin');
+            else if (isCollaborator) router.replace('/collaborator');
+            else router.replace('/dashboard');
+        }
+    }, [user, loading, isAdmin, isCollaborator, router]);
+
+    if (loading || user) {
+        return <AuthProviderSkeleton />;
+    }
+
+    return <>{children}</>;
+};
