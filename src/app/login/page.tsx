@@ -88,6 +88,8 @@ function LoginPageContent() {
       let errorMessage = 'Ocorreu um erro ao tentar fazer login. Tente novamente.';
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         errorMessage = 'E-mail ou senha incorretos.';
+      } else if (error.code) {
+        errorMessage = `Erro: ${error.code}. Por favor, contate o suporte.`;
       }
       toast({
         title: 'Erro no Login',
