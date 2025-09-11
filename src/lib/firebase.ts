@@ -2,7 +2,7 @@
 // Importa os módulos necessários do Firebase
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
+import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
@@ -25,6 +25,22 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
 });
+
+// Habilita a persistência offline para web
+if (typeof window !== 'undefined') {
+    enableIndexedDbPersistence(db)
+      .catch((err) => {
+          if (err.code == 'failed-precondition') {
+              // Múltiplas abas abertas, isso pode acontecer.
+              // A persistência funcionará em uma das abas.
+              console.warn('Falha ao habilitar persistência: múltiplas abas abertas.');
+          } else if (err.code == 'unimplemented') {
+              // O navegador não suporta a persistência.
+              console.warn('Seu navegador não suporta persistência offline do Firestore.');
+          }
+      });
+}
+
 
 // Autenticação
 const auth = getAuth(app);
