@@ -1,23 +1,4 @@
-import admin from 'firebase-admin';
-
-function getAdminApp() {
-  if (admin.apps.length > 0) {
-    return {
-      auth: admin.auth(),
-      db: admin.firestore(),
-      storage: admin.storage(),
-    };
-  }
-
-  // When deployed to App Hosting, the SDK automatically discovers the credentials.
-  // No need to pass them in initializeApp().
-  const app = admin.initializeApp();
-
-  return {
-    auth: admin.auth(app),
-    db: admin.firestore(app),
-    storage: admin.storage(app),
-  };
-}
-
-export { getAdminApp };
+// This file is deprecated and no longer used.
+// The logic has been centralized in firebase-admin.ts to prevent multiple initializations.
+// It is kept for reference but can be safely deleted.
+export {};

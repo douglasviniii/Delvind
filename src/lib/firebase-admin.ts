@@ -1,15 +1,14 @@
 
 import * as admin from 'firebase-admin';
 
-// Check if the app is already initialized
+// Check if the app is already initialized to prevent errors in hot-reloading environments
 if (!admin.apps.length) {
   try {
-     // When deployed to App Hosting, the SDK automatically discovers the credentials.
-    // No need to pass them in initializeApp(). For local development,
-    // you would use a service account file.
+     // When deployed to App Hosting, the SDK automatically discovers credentials.
+    // For local development, you would set up GOOGLE_APPLICATION_CREDENTIALS.
     admin.initializeApp();
-  } catch (error) {
-    console.error('Firebase admin initialization error', error);
+  } catch (error: any) {
+    console.error('Firebase admin initialization error', error.stack);
   }
 }
 
