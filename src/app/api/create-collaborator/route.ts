@@ -1,10 +1,6 @@
-
 import { NextResponse } from 'next/server';
 import { getAdminApp } from '../../../lib/firebase-admin';
-import { auth, firestore } from 'firebase-admin';
-
-// Inicializa o app admin para esta rota
-getAdminApp();
+import { auth as adminAuth, firestore as adminFirestore } from 'firebase-admin';
 
 export async function POST(req: Request) {
   if (req.method !== 'POST') {
@@ -12,6 +8,11 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Garante que o app admin está inicializado
+    const adminApp = getAdminApp();
+    const auth = adminAuth(adminApp);
+    const firestore = adminFirestore(adminApp);
+
     const { email, password, name } = await req.json();
 
     if (!email || !password || !name) {
@@ -19,14 +20,14 @@ export async function POST(req: Request) {
     }
 
     // Cria o usuário na autenticação do Firebase
-    const userRecord = await auth().createUser({
+    const userRecord = await auth.createUser({
       email,
       password,
       displayName: name,
     });
 
     // Salva os dados do usuário na coleção 'users' do Firestore
-    await firestore().collection('users').doc(userRecord.uid).set({
+    await firestore.collection('users').doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: userRecord.email,
       displayName: name,
@@ -48,6 +49,9 @@ export async function POST(req: Request) {
             case 'auth/invalid-password':
                 errorMessage = 'A senha é inválida. Deve ter pelo menos 6 caracteres.';
                 break;
+            case 'app/invalid-credential':
+                 errorMessage = 'Erro de credencial no servidor. Contate o suporte.';
+                 break;
             default:
                  errorMessage = `Erro do Firebase: ${error.message} (código: ${error.code})`;
         }
