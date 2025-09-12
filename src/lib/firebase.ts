@@ -2,7 +2,7 @@
 // Importa os módulos necessários do Firebase
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
@@ -20,31 +20,9 @@ const firebaseConfig = {
 // Inicializa o Firebase (garante que só inicializa uma vez)
 const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Firestore com cache ilimitado
-const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-});
-
-// Habilita a persistência offline para web
-if (typeof window !== 'undefined') {
-    try {
-        enableIndexedDbPersistence(db)
-          .catch((err) => {
-              if (err.code == 'failed-precondition') {
-                  console.warn('Falha ao habilitar persistência: múltiplas abas abertas.');
-              } else if (err.code == 'unimplemented') {
-                  console.warn('Seu navegador não suporta persistência offline do Firestore.');
-              }
-          });
-    } catch (e) {
-        console.error("Erro ao habilitar persistência do Firestore", e);
-    }
-}
-
-// Autenticação
+// Obtém as instâncias dos serviços a partir do app inicializado
+const db = getFirestore(app);
 const auth = getAuth(app);
-
-// Storage
 const storage = getStorage(app);
 
 // Analytics (só no client-side, evita erro no SSR do Next.js)
