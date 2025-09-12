@@ -18,12 +18,7 @@ const firebaseConfig = {
 };
 
 // Inicializa o Firebase (garante que só inicializa uma vez)
-let app: FirebaseApp;
-if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
-} else {
-    app = getApp();
-}
+const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Firestore com cache ilimitado
 const db = initializeFirestore(app, {
@@ -32,14 +27,18 @@ const db = initializeFirestore(app, {
 
 // Habilita a persistência offline para web
 if (typeof window !== 'undefined') {
-    enableIndexedDbPersistence(db)
-      .catch((err) => {
-          if (err.code == 'failed-precondition') {
-              console.warn('Falha ao habilitar persistência: múltiplas abas abertas.');
-          } else if (err.code == 'unimplemented') {
-              console.warn('Seu navegador não suporta persistência offline do Firestore.');
-          }
-      });
+    try {
+        enableIndexedDbPersistence(db)
+          .catch((err) => {
+              if (err.code == 'failed-precondition') {
+                  console.warn('Falha ao habilitar persistência: múltiplas abas abertas.');
+              } else if (err.code == 'unimplemented') {
+                  console.warn('Seu navegador não suporta persistência offline do Firestore.');
+              }
+          });
+    } catch (e) {
+        console.error("Erro ao habilitar persistência do Firestore", e);
+    }
 }
 
 // Autenticação
