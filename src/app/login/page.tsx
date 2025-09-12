@@ -56,7 +56,6 @@ function LoginPageContent() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       
-      // Clear guest chat session upon successful login
       localStorage.removeItem('activeConversationId');
 
       toast({
@@ -66,17 +65,21 @@ function LoginPageContent() {
 
       const user = userCredential.user;
       
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
+      // 1. Verifica se é Admin
       if (user.email === 'admin@delvind.com') {
         router.push('/admin');
         return;
       }
       
+      // 2. Se não for Admin, verifica o documento no Firestore para outras roles
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
       if (userDoc.exists() && userDoc.data().role === 'collaborator') {
+          // É um Colaborador
           router.push('/collaborator');
       } else {
+         // É um Cliente (ou role não definida, assume cliente)
          router.push('/dashboard');
       }
 
