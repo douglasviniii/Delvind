@@ -1,3 +1,4 @@
+
 // Importa os módulos necessários do Firebase
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -18,7 +19,12 @@ const firebaseConfig = {
 };
 
 // Inicializa o Firebase (garante que só inicializa uma vez)
-const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app: FirebaseApp;
+if (getApps().length === 0) {
+    app = initializeApp(firebaseConfig);
+} else {
+    app = getApp();
+}
 
 // Obtém as instâncias dos serviços a partir do app inicializado
 const auth = getAuth(app);

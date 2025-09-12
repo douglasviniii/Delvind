@@ -1,5 +1,6 @@
 
 import * as admin from 'firebase-admin';
+import serviceAccount from '../../../firebase-service-account.json';
 
 export function initializeAdminApp() {
   // Se o app 'admin' já estiver inicializado, retorne-o
@@ -8,21 +9,14 @@ export function initializeAdminApp() {
     return existingApp;
   }
 
-  // Verifica se as variáveis de ambiente necessárias estão definidas
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-    throw new Error('As variáveis de ambiente do Firebase Admin não estão definidas corretamente.');
-  }
+  // As credenciais são importadas do arquivo JSON
+  const credential = admin.credential.cert(serviceAccount);
 
   try {
-    // Inicializa o app com as credenciais das variáveis de ambiente
+    // Inicializa o app com as credenciais do arquivo importado
     return admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // Substitui os literais '\n' por quebras de linha reais na chave privada
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      }),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      credential,
+      storageBucket: 'venda-fcil-pdv.appspot.com',
     }, 'admin'); // Nomeia a instância para evitar conflitos
 
   } catch (e: any) {
