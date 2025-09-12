@@ -65,21 +65,19 @@ function LoginPageContent() {
 
       const user = userCredential.user;
       
-      // 1. Verifica se é Admin
+      // A lógica de redirecionamento agora é centralizada no AuthProvider/UnprotectedRoute
+      // Apenas navegamos para uma rota padrão e deixamos o contexto cuidar do resto.
       if (user.email === 'admin@delvind.com') {
         router.push('/admin');
         return;
       }
-      
-      // 2. Se não for Admin, verifica o documento no Firestore para outras roles
+
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists() && userDoc.data().role === 'collaborator') {
-          // É um Colaborador
           router.push('/collaborator');
       } else {
-         // É um Cliente (ou role não definida, assume cliente)
          router.push('/dashboard');
       }
 

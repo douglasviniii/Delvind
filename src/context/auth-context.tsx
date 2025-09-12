@@ -122,46 +122,53 @@ export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean
     const router = useRouter();
     const pathname = usePathname();
 
-    if (loading) {
-        return <FullScreenLoader />;
-    }
+    useEffect(() => {
+        if (loading) {
+            return; // Aguarda a verificação de autenticação terminar
+        }
 
-    if (!user) {
-        if (typeof window !== 'undefined') {
+        // Se não há usuário, redireciona para o login
+        if (!user) {
             router.replace('/login');
+            return;
         }
-        return <FullScreenLoader />;
-    }
-    
-    if (adminOnly && !isAdmin) {
-        if (typeof window !== 'undefined') {
-            router.replace(isCollaborator ? '/collaborator' : '/dashboard');
+
+        // Regras de redirecionamento baseadas na role
+        if (adminOnly && !isAdmin) {
+            router.replace('/dashboard'); // Ou uma página de acesso negado
+            return;
         }
+
+        if (collaboratorOnly && !isCollaborator) {
+            router.replace('/dashboard'); // Ou uma página de acesso negado
+            return;
+        }
+
+        // Se um usuário não-admin tenta acessar /admin
+        if (pathname.startsWith('/admin') && !isAdmin) {
+            router.replace('/dashboard');
+            return;
+        }
+        
+        // Se um usuário não-colaborador tenta acessar /collaborator
+        if (pathname.startsWith('/collaborator') && !isCollaborator && !isAdmin) { // Admin pode precisar ver o painel do colaborador
+             router.replace('/dashboard');
+            return;
+        }
+        
+    }, [user, loading, isAdmin, isCollaborator, router, pathname, adminOnly, collaboratorOnly]);
+
+
+    if (loading || !user) {
         return <FullScreenLoader />;
     }
 
-    if (collaboratorOnly && !isCollaborator) {
-         if (typeof window !== 'undefined') {
-            router.replace(isAdmin ? '/admin' : '/dashboard');
-        }
-        return <FullScreenLoader />;
-    }
+    // Verifica se o acesso é permitido antes de renderizar
+    if (adminOnly && !isAdmin) return <FullScreenLoader />;
+    if (collaboratorOnly && !isCollaborator) return <FullScreenLoader />;
+    if (pathname.startsWith('/admin') && !isAdmin) return <FullScreenLoader />;
+    if (pathname.startsWith('/collaborator') && !isCollaborator && !isAdmin) return <FullScreenLoader />;
 
-    // Se o usuário está na página de admin mas não é admin, redireciona
-    if (pathname.startsWith('/admin') && !isAdmin) {
-      if (typeof window !== 'undefined') {
-        router.replace(isCollaborator ? '/collaborator' : '/dashboard');
-      }
-      return <FullScreenLoader />;
-    }
-
-    // Se o usuário está na página de colaborador mas não é colaborador
-    if (pathname.startsWith('/collaborator') && !isCollaborator) {
-      if (typeof window !== 'undefined') {
-        router.replace(isAdmin ? '/admin' : '/dashboard');
-      }
-      return <FullScreenLoader />;
-    }
 
     return <>{children}</>;
 };
@@ -171,16 +178,23 @@ export const UnprotectedRoute: React.FC<{ children: ReactNode }> = ({ children }
     const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
 
-    if (loading) {
-        return <FullScreenLoader />;
-    }
-
-    if (user) {
-         if (typeof window !== 'undefined') {
-            if (isAdmin) router.replace('/admin');
-            else if (isCollaborator) router.replace('/collaborator');
-            else router.replace('/dashboard');
+    useEffect(() => {
+        if (loading) {
+            return; // Não faz nada enquanto carrega
         }
+        if (user) {
+            if (isAdmin) {
+                router.replace('/admin');
+            } else if (isCollaborator) {
+                router.replace('/collaborator');
+            } else {
+                router.replace('/dashboard');
+            }
+        }
+    }, [user, loading, isAdmin, isCollaborator, router]);
+
+
+    if (loading || user) {
         return <FullScreenLoader />;
     }
 
