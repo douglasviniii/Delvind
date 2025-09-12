@@ -1,6 +1,6 @@
 
 import * as admin from 'firebase-admin';
-import serviceAccount from '../../../firebase-service-account.json';
+import serviceAccount from '../../firebase-service-account.json';
 
 // Converte o objeto de conta de serviço para o tipo esperado pelo Firebase Admin SDK
 const typedServiceAccount = {
