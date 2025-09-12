@@ -1,3 +1,4 @@
+
 // Importa os módulos necessários do Firebase
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -10,7 +11,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
   authDomain: "venda-fcil-pdv.firebaseapp.com",
   projectId: "venda-fcil-pdv",
-  storageBucket: "venda-fcil-pdv.appspot.com", // Valor correto
+  storageBucket: "venda-fcil-pdv.appspot.com",
   messagingSenderId: "114570788878",
   appId: "1:114570788878:web:1e3fa51754f3ae6862fc5f",
   measurementId: "G-792KHTQP7R"
