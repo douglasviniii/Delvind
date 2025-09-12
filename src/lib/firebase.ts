@@ -1,4 +1,3 @@
-
 // Importa os módulos necessários do Firebase
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -7,7 +6,7 @@ import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Configuração do Firebase para o lado do cliente.
-// Estas são chaves públicas e seguras para serem usadas no navegador.
+// Estas são as chaves públicas e seguras para serem usadas no navegador.
 const firebaseConfig = {
   apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
   authDomain: "venda-fcil-pdv.firebaseapp.com",
@@ -22,8 +21,8 @@ const firebaseConfig = {
 const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Obtém as instâncias dos serviços a partir do app inicializado
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
 const storage = getStorage(app);
 
 // Analytics (só no client-side, evita erro no SSR do Next.js)
