@@ -9,7 +9,7 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 // Configuração do Firebase para o lado do cliente.
 // Estas são chaves públicas e seguras para serem usadas no navegador.
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
+  apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
   authDomain: "venda-fcil-pdv.firebaseapp.com",
   projectId: "venda-fcil-pdv",
   storageBucket: "venda-fcil-pdv.appspot.com",
