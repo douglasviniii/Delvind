@@ -121,6 +121,7 @@ export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean
     const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+    const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
         if (loading) {
@@ -133,42 +134,41 @@ export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean
             return;
         }
 
-        // Regras de redirecionamento baseadas na role
+        // Se a rota é apenas para admin, e o usuário não é admin, redireciona
         if (adminOnly && !isAdmin) {
-            router.replace('/dashboard'); // Ou uma página de acesso negado
+            router.replace('/dashboard');
             return;
         }
 
+        // Se a rota é apenas para colaborador, e o usuário não é colaborador, redireciona
         if (collaboratorOnly && !isCollaborator) {
-            router.replace('/dashboard'); // Ou uma página de acesso negado
-            return;
-        }
-
-        // Se um usuário não-admin tenta acessar /admin
-        if (pathname.startsWith('/admin') && !isAdmin) {
             router.replace('/dashboard');
             return;
         }
         
-        // Se um usuário não-colaborador tenta acessar /collaborator
-        if (pathname.startsWith('/collaborator') && !isCollaborator && !isAdmin) { // Admin pode precisar ver o painel do colaborador
+        // Regra geral de acesso aos painéis
+        const isTryingAdmin = pathname.startsWith('/admin');
+        const isTryingCollaborator = pathname.startsWith('/collaborator');
+        
+        if (isTryingAdmin && !isAdmin) {
              router.replace('/dashboard');
+             return;
+        }
+
+        if(isTryingCollaborator && !isCollaborator && !isAdmin) {
+            router.replace('/dashboard');
             return;
         }
-        
+
+        // Se passou em todas as verificações, o usuário está autorizado
+        setIsAuthorized(true);
+
     }, [user, loading, isAdmin, isCollaborator, router, pathname, adminOnly, collaboratorOnly]);
 
 
-    if (loading || !user) {
+    if (!isAuthorized) {
         return <FullScreenLoader />;
     }
-
-    // Verifica se o acesso é permitido antes de renderizar
-    if (adminOnly && !isAdmin) return <FullScreenLoader />;
-    if (collaboratorOnly && !isCollaborator) return <FullScreenLoader />;
-    if (pathname.startsWith('/admin') && !isAdmin) return <FullScreenLoader />;
-    if (pathname.startsWith('/collaborator') && !isCollaborator && !isAdmin) return <FullScreenLoader />;
-
 
     return <>{children}</>;
 };
@@ -177,6 +177,7 @@ export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean
 export const UnprotectedRoute: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user, loading, isAdmin, isCollaborator } = useAuth();
     const router = useRouter();
+    const [isChecking, setIsChecking] = useState(true);
 
     useEffect(() => {
         if (loading) {
@@ -190,11 +191,14 @@ export const UnprotectedRoute: React.FC<{ children: ReactNode }> = ({ children }
             } else {
                 router.replace('/dashboard');
             }
+        } else {
+            // Se não há usuário, a verificação terminou e pode mostrar o conteúdo
+            setIsChecking(false);
         }
     }, [user, loading, isAdmin, isCollaborator, router]);
 
 
-    if (loading || user) {
+    if (isChecking) {
         return <FullScreenLoader />;
     }
 
