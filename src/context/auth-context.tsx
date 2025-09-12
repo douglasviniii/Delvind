@@ -128,42 +128,43 @@ export const ProtectedRoute: React.FC<{ children: ReactNode; adminOnly?: boolean
             return; // Aguarda a verificação de autenticação terminar
         }
 
-        // Se não há usuário, redireciona para o login
+        // 1. Se não há usuário, redireciona para o login
         if (!user) {
             router.replace('/login');
             return;
         }
 
-        // Se a rota é apenas para admin, e o usuário não é admin, redireciona
-        if (adminOnly && !isAdmin) {
-            router.replace('/dashboard');
-            return;
-        }
+        const isTryingAdminRoute = pathname.startsWith('/admin');
+        const isTryingCollaboratorRoute = pathname.startsWith('/collaborator');
+        const isTryingCustomerRoute = pathname.startsWith('/dashboard');
 
-        // Se a rota é apenas para colaborador, e o usuário não é colaborador, redireciona
-        if (collaboratorOnly && !isCollaborator) {
-            router.replace('/dashboard');
-            return;
+        // 2. Lógica para o ADMIN
+        if (isAdmin) {
+            // Se o admin tenta acessar qualquer rota que não seja /admin, redireciona para /admin
+            if (!isTryingAdminRoute) {
+                router.replace('/admin');
+                return;
+            }
+        // 3. Lógica para o COLABORADOR
+        } else if (isCollaborator) {
+            // Se o colaborador tenta acessar uma rota de admin, redireciona para seu painel
+            if (isTryingAdminRoute) {
+                router.replace('/collaborator');
+                return;
+            }
+        // 4. Lógica para o CLIENTE
+        } else {
+            // Se um cliente tenta acessar rotas de admin ou colaborador, redireciona para o dashboard dele
+            if (isTryingAdminRoute || isTryingCollaboratorRoute) {
+                router.replace('/dashboard');
+                return;
+            }
         }
         
-        // Regra geral de acesso aos painéis
-        const isTryingAdmin = pathname.startsWith('/admin');
-        const isTryingCollaborator = pathname.startsWith('/collaborator');
-        
-        if (isTryingAdmin && !isAdmin) {
-             router.replace('/dashboard');
-             return;
-        }
-
-        if(isTryingCollaborator && !isCollaborator && !isAdmin) {
-            router.replace('/dashboard');
-            return;
-        }
-
-        // Se passou em todas as verificações, o usuário está autorizado
+        // 5. Se passou por todas as verificações, o usuário está autorizado a ver a página
         setIsAuthorized(true);
 
-    }, [user, loading, isAdmin, isCollaborator, router, pathname, adminOnly, collaboratorOnly]);
+    }, [user, loading, isAdmin, isCollaborator, router, pathname]);
 
 
     if (!isAuthorized) {

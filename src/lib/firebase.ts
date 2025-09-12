@@ -1,41 +1,42 @@
 
 // Importa os módulos necessários do Firebase
-import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// Configuração do Firebase para o lado do cliente.
-// Estas são as chaves públicas e seguras para serem usadas no navegador.
+// Configuração do Firebase (copiada do console)
 const firebaseConfig = {
   apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
   authDomain: "venda-fcil-pdv.firebaseapp.com",
   projectId: "venda-fcil-pdv",
-  storageBucket: "venda-fcil-pdv.appspot.com",
+  storageBucket: "venda-fcil-pdv.firebasestorage.app",
   messagingSenderId: "114570788878",
   appId: "1:114570788878:web:1e3fa51754f3ae6862fc5f",
-  measurementId: "G-792KHTQP7R"
+  measurementId: "G-792KHTQP7R",
+  databaseURL: "https://venda-fcil-pdv.firebaseio.com"
 };
 
 // Inicializa o Firebase (garante que só inicializa uma vez)
-let app: FirebaseApp;
-if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
-} else {
-    app = getApp();
-}
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Obtém as instâncias dos serviços a partir do app inicializado
+// Firestore com cache ilimitado
+const db = initializeFirestore(app, {
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+});
+
+// Autenticação
 const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Storage
 const storage = getStorage(app);
 
 // Analytics (só no client-side, evita erro no SSR do Next.js)
-let analytics: any = null;
+let analytics = null;
 if (typeof window !== "undefined") {
   isSupported().then((supported) => {
-    if (supported && firebaseConfig.measurementId) {
+    if (supported) {
       analytics = getAnalytics(app);
     }
   });
