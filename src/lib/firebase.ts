@@ -1,23 +1,28 @@
 // Importa os módulos necessários do Firebase
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// Configuração do Firebase lida a partir das variáveis de ambiente
+// Configuração do Firebase com todos os valores corretos
 const firebaseConfig = {
   apiKey: "AIzaSyB0GTV_m5oit8ddZeCmQ3hW7Jhh-LKiKG0",
   authDomain: "venda-fcil-pdv.firebaseapp.com",
   projectId: "venda-fcil-pdv",
-  storageBucket: "venda-fcil-pdv.appspot.com",
+  storageBucket: "venda-fcil-pdv.appspot.com", // Valor correto
   messagingSenderId: "114570788878",
   appId: "1:114570788878:web:1e3fa51754f3ae6862fc5f",
   measurementId: "G-792KHTQP7R"
 };
 
 // Inicializa o Firebase (garante que só inicializa uma vez)
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app: FirebaseApp;
+if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+} else {
+    app = getApp();
+}
 
 // Firestore com cache ilimitado
 const db = initializeFirestore(app, {
@@ -29,16 +34,12 @@ if (typeof window !== 'undefined') {
     enableIndexedDbPersistence(db)
       .catch((err) => {
           if (err.code == 'failed-precondition') {
-              // Múltiplas abas abertas, isso pode acontecer.
-              // A persistência funcionará em uma das abas.
               console.warn('Falha ao habilitar persistência: múltiplas abas abertas.');
           } else if (err.code == 'unimplemented') {
-              // O navegador não suporta a persistência offline do Firestore.
               console.warn('Seu navegador não suporta persistência offline do Firestore.');
           }
       });
 }
-
 
 // Autenticação
 const auth = getAuth(app);
