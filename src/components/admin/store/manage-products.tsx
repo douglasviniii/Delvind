@@ -77,7 +77,7 @@ export function ManageProducts() {
     defaultValues: { name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append: adicionar, remove } = useFieldArray({
     control: form.control,
     name: 'imageUrls',
   });
@@ -111,7 +111,7 @@ export function ManageProducts() {
         const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
         const snapshot = await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(snapshot.ref);
-        append(downloadURL);
+        adicionar(downloadURL);
         toast({ title: 'Sucesso', description: 'Imagem adicionada.' });
       } catch (error) {
         toast({ title: 'Erro de Upload', variant: 'destructive' });
