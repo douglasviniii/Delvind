@@ -94,7 +94,12 @@ const SmartOffer = ({ product }: { product: Product }) => {
     }, [product.id, product.promoPrice]);
 
     const handleAcceptOffer = () => {
-        addToCart({ ...product, price: product.promoPrice! }, 1);
+        const productToAdd = {
+            ...product,
+            imageUrl: product.imageUrls[0], // Ensure imageUrl is passed
+            price: product.promoPrice!,
+        };
+        addToCart(productToAdd, 1);
         setShowOffer(false);
         toast({
             title: "Oferta Adicionada!",
@@ -326,6 +331,16 @@ export default function ProductDetailPage() {
     }
   }, [id]);
 
+  const handleAddToCart = () => {
+    if (product) {
+      const productToAdd = {
+        ...product,
+        imageUrl: product.imageUrls[0], // Pass the first image as the main imageUrl
+      };
+      addToCart(productToAdd, quantity);
+    }
+  };
+
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     toast({ title: 'Link Copiado!', description: 'O link do produto foi copiado para sua área de transferência.' });
@@ -437,7 +452,7 @@ export default function ProductDetailPage() {
                                     />
                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setQuantity(q => q + 1)}><Plus className="h-4 w-4" /></Button>
                                 </div>
-                                <Button size="lg" className="w-full flex-1" disabled={product.stock === 0} onClick={() => addToCart(product, quantity)}>
+                                <Button size="lg" className="w-full flex-1" disabled={product.stock === 0} onClick={handleAddToCart}>
                                     <ShoppingCart className="mr-2 h-5 w-5" />
                                     Adicionar ao Carrinho
                                 </Button>
