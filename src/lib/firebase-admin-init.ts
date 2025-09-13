@@ -1,14 +1,7 @@
 
 import * as admin from 'firebase-admin';
-import serviceAccount from '../../firebase-service-account.json';
 
-// Converte o objeto de conta de serviço para o tipo esperado pelo Firebase Admin SDK
-const typedServiceAccount = {
-  projectId: serviceAccount.project_id,
-  clientEmail: serviceAccount.client_email,
-  privateKey: serviceAccount.private_key,
-};
-
+// Função para inicializar o Admin SDK a partir de variáveis de ambiente
 export function initializeAdminApp() {
   // Se o app 'admin' já estiver inicializado, retorne-o
   const existingApp = admin.apps.find(app => app?.name === 'admin');
@@ -16,20 +9,29 @@ export function initializeAdminApp() {
     return existingApp;
   }
 
+  // Tenta obter as credenciais da variável de ambiente
+  const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+  if (!serviceAccountString) {
+    throw new Error('A variável de ambiente FIREBASE_SERVICE_ACCOUNT_KEY não está definida. O deploy falhará.');
+  }
+
   try {
-    // Inicializa o app com as credenciais do arquivo importado
+    const serviceAccount = JSON.parse(serviceAccountString);
+
+    // Inicializa o app com as credenciais da variável de ambiente
     return admin.initializeApp({
-      credential: admin.credential.cert(typedServiceAccount),
+      credential: admin.credential.cert(serviceAccount),
       storageBucket: 'venda-fcil-pdv.appspot.com',
     }, 'admin'); // Nomeia a instância para evitar conflitos
 
   } catch (e: any) {
-    console.error('Falha ao inicializar o Firebase Admin:', e.message);
-    throw new Error('Não foi possível inicializar o Firebase Admin. Verifique as credenciais.');
+    console.error('Falha ao analisar a FIREBASE_SERVICE_ACCOUNT_KEY:', e.message);
+    throw new Error('Não foi possível inicializar o Firebase Admin. Verifique o formato da variável de ambiente.');
   }
 }
 
-// Para manter compatibilidade, caso outra parte do sistema use esta função
+// Para manter compatibilidade
 export function getAdminApp() {
     return { db: admin.firestore(initializeAdminApp()) };
 }
