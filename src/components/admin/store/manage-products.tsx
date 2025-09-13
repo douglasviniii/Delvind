@@ -79,7 +79,7 @@ export function ManageProducts() {
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: 'imageUrls',
+    name: "imageUrls",
   });
 
   const hasStock = form.watch('hasStock');
