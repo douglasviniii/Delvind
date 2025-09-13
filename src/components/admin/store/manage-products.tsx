@@ -348,4 +348,5 @@ export function ManageProducts() {
       </CardContent>
     </Card>
   );
-}
+
+    
