@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, Upload, Loader2, GripVertical } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import TiptapEditor from '@/components/ui/tiptap-editor';
@@ -348,5 +348,4 @@ export function ManageProducts() {
       </CardContent>
     </Card>
   );
-
-    
+}
