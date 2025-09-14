@@ -38,6 +38,8 @@ const productSchema = z.object({
   imageUrls: z.array(z.string().url()).min(1, 'Adicione pelo menos uma imagem.'),
 });
 
+type ProductFormData = z.infer<typeof productSchema>;
+
 type Product = {
   id: string;
   name: string;
@@ -67,12 +69,12 @@ export function ManageProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<z.infer<typeof productSchema> & { id: string } | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductFormData & { id: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof productSchema>>({
+  const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: { name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] },
   });
@@ -147,7 +149,7 @@ export function ManageProducts() {
     toast({ title: 'Produto Excluído' });
   }
 
-  const onSubmit = async (values: z.infer<typeof productSchema>) => {
+  const onSubmit = async (values: ProductFormData) => {
     const dataToSave = {
         ...values,
         price: parseCurrency(values.price),
@@ -349,5 +351,3 @@ export function ManageProducts() {
     </Card>
   );
 }
-
-    
