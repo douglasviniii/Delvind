@@ -1,14 +1,18 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/cart-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
-export default function SuccessPageClient({ sessionId }: { sessionId: string }) {
+function SuccessContent() {
   const { clearCart } = useCart();
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
     if (sessionId) clearCart();
@@ -42,5 +46,13 @@ export default function SuccessPageClient({ sessionId }: { sessionId: string }) 
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen">Carregando...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }
