@@ -88,39 +88,45 @@ const SmartOffer = ({ product }: { product: Product }) => {
         localStorage.setItem(key, count.toString());
         setVisitCount(count);
 
-        if (count >= 3 && product.promoPrice) {
+        // A condição agora verifica por promoPrice2 para exibir a oferta especial
+        if (count >= 3 && product.promoPrice2) {
            setTimeout(() => setShowOffer(true), 2000);
         }
-    }, [product.id, product.promoPrice]);
+    }, [product.id, product.promoPrice2]);
 
     const handleAcceptOffer = () => {
+        const currentPrice = product.promoPrice || product.price;
         const productToAdd = {
             ...product,
-            imageUrl: product.imageUrls[0], // Ensure imageUrl is passed
-            price: product.promoPrice!,
+            imageUrl: product.imageUrls[0], // Garante que imageUrl seja passada
+            price: currentPrice, // O preço base continua o mesmo
+            promoPrice: product.promoPrice2, // O preço promocional se torna o da oferta
         };
         addToCart(productToAdd, 1);
         setShowOffer(false);
         toast({
-            title: "Oferta Adicionada!",
-            description: `${product.name} foi adicionado ao seu carrinho com o preço promocional.`,
+            title: "Oferta Especial Adicionada!",
+            description: `${product.name} foi adicionado ao seu carrinho com um super desconto.`,
         });
     }
     
     if (!showOffer) return null;
 
+    // A oferta mostra a transição do preço promocional 1 para o 2
+    const originalOfferPrice = product.promoPrice || product.price;
+
     return (
          <AlertDialog open={showOffer} onOpenChange={setShowOffer}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Uma Oferta Especial Para Você!</AlertDialogTitle>
+                    <AlertDialogTitle>Uma Oferta Exclusiva Para Você!</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Notamos que você tem interesse neste produto. Que tal um preço especial para te ajudar a decidir?
+                        Notamos seu interesse neste produto. Para te ajudar a decidir, preparamos um desconto ainda mais especial!
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className='py-4 text-center'>
-                    <p className='text-lg text-muted-foreground'>De <span className='line-through'>{formatCurrency(product.price)}</span> por apenas</p>
-                    <p className='text-4xl font-bold text-primary'>{formatCurrency(product.promoPrice!)}</p>
+                    <p className='text-lg text-muted-foreground'>De <span className='line-through'>{formatCurrency(originalOfferPrice)}</span> por apenas</p>
+                    <p className='text-4xl font-bold text-primary'>{formatCurrency(product.promoPrice2!)}</p>
                 </div>
                 <AlertDialogFooter>
                 <AlertDialogCancel>Não, obrigado</AlertDialogCancel>
