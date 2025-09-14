@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db, storage } from '@/lib/firebase';
@@ -9,11 +9,19 @@ import { collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, d
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Form } from '@/components/ui/form';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { PlusCircle, Edit, Trash2, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
+import TiptapEditor from '@/components/ui/tiptap-editor';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-type ImageField = { id: string; url: string };
 
 const productSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório.'),
@@ -79,14 +87,9 @@ export function ManageProducts() {
     },
   });
 
-  // ✅ Correção: Tipando name no useFieldArray
-  const { fields, append, remove } = useFieldArray<
-    ProductFormData,
-    'imageUrls',
-    'id'
-  >({
+  const { fields, append, remove } = useFieldArray<ProductFormData>({
     control: form.control,
-    name: 'imageUrls',
+    name: "imageUrls",
   });
 
   const hasStock = form.watch('hasStock');
@@ -117,7 +120,7 @@ export function ManageProducts() {
         const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
         const snapshot = await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(snapshot.ref);
-        append({ url: downloadURL }); // ✅ apenas o objeto com a URL
+        append({ url: downloadURL });
         toast({ title: 'Sucesso', description: 'Imagem adicionada.' });
       } catch {
         toast({ title: 'Erro de Upload', variant: 'destructive' });
@@ -141,7 +144,7 @@ export function ManageProducts() {
         hasStock: !!fullData.stock,
         requiresShipping: !!fullData.requiresShipping,
         freeShipping: !!fullData.freeShipping,
-        imageUrls: fullData.imageUrls.map((url: string) => ({ id: `${Date.now()}-${Math.random()}`, url })),
+        imageUrls: fullData.imageUrls.map((url: string) => ({ url })),
       };
       setEditingProduct(dataToEdit);
       form.reset(dataToEdit);
@@ -162,7 +165,7 @@ export function ManageProducts() {
       promoPrice2: parseCurrency(values.promoPrice2),
       stock: values.hasStock ? values.stock : null,
       freeShipping: values.requiresShipping ? values.freeShipping : false,
-      imageUrls: values.imageUrls.map(img => img.url), // extrai URLs
+      imageUrls: values.imageUrls.map(img => img.url),
     };
     delete (dataToSave as any).hasStock;
 
@@ -174,16 +177,7 @@ export function ManageProducts() {
       toast({ title: 'Produto Adicionado' });
     }
 
-    form.reset({
-      name: '',
-      description: '',
-      price: '0,00',
-      categoryId: '',
-      hasStock: false,
-      requiresShipping: false,
-      freeShipping: false,
-      imageUrls: [],
-    });
+    form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
     setEditingProduct(null);
     setIsDialogOpen(false);
   };
@@ -195,29 +189,16 @@ export function ManageProducts() {
           <CardTitle>Gerenciar Produtos</CardTitle>
           <CardDescription>Adicione e edite os produtos da sua loja.</CardDescription>
         </div>
-        <Dialog
-          open={isDialogOpen}
-          onOpenChange={isOpen => {
+        <Dialog open={isDialogOpen} onOpenChange={isOpen => {
             if (!isOpen) {
               setEditingProduct(null);
-              form.reset({
-                name: '',
-                description: '',
-                price: '0,00',
-                categoryId: '',
-                hasStock: false,
-                requiresShipping: false,
-                freeShipping: false,
-                imageUrls: [],
-              });
+              form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
             }
             setIsDialogOpen(isOpen);
           }}
         >
           <DialogTrigger asChild>
-            <Button>
-              Novo Produto
-            </Button>
+            <Button onClick={() => setIsDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Novo Produto</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
             <DialogHeader>
@@ -225,16 +206,127 @@ export function ManageProducts() {
             </DialogHeader>
             <div className="flex-1 overflow-y-auto pr-6 -mr-6">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                  {/* Inputs, Checkbox, Select, Upload de imagens, TiptapEditor */}
+                <form id="product-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                   <FormField control={form.control} name="label" render={({ field }) => (
+                    <FormItem><FormLabel>Selo (Ex: "Oferta", "Novo")</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField control={form.control} name="price" render={({ field }) => (
+                      <FormItem><FormLabel>Preço (R$)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="promoPrice" render={({ field }) => (
+                      <FormItem><FormLabel>Preço Promocional (Opcional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                      <FormField control={form.control} name="promoPrice2" render={({ field }) => (
+                      <FormItem><FormLabel>Preço Promocional 2 (Opcional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                  <FormField control={form.control} name="categoryId" render={({ field }) => (
+                    <FormItem><FormLabel>Categoria</FormLabel><Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger></FormControl>
+                      <SelectContent>{categories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}</SelectContent>
+                    </Select><FormMessage /></FormItem>
+                  )} />
+                   <div className="space-y-4 rounded-md border p-4">
+                     <FormField control={form.control} name="hasStock" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between">
+                            <FormLabel>Controlar Estoque?</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                     )} />
+                     {hasStock && (
+                        <FormField control={form.control} name="stock" render={({ field }) => (
+                            <FormItem><FormLabel>Quantidade em Estoque</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                     )}
+                   </div>
+                   <div className="space-y-4 rounded-md border p-4">
+                     <FormField control={form.control} name="requiresShipping" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between">
+                            <FormLabel>Requer Entrega (Produto Físico)?</FormLabel>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                     )} />
+                     {requiresShipping && (
+                        <FormField control={form.control} name="freeShipping" render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between mt-4">
+                                <FormLabel>Oferecer Frete Grátis?</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )} />
+                     )}
+                   </div>
+                  <FormField control={form.control} name="description" render={({ field }) => (
+                    <FormItem><FormLabel>Descrição Completa</FormLabel><FormControl><TiptapEditor value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <div className="space-y-2">
+                    <FormLabel>Imagens do Produto</FormLabel>
+                    <div className="grid grid-cols-3 gap-4">
+                      {fields.map((field, index) => (
+                        <div key={field.id} className="relative group">
+                           <Image src={field.url} alt="Preview" width={150} height={150} className="rounded-md object-cover" />
+                           <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => remove(index)}>
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                        </div>
+                      ))}
+                      <Card className="flex items-center justify-center border-2 border-dashed h-full min-h-[100px]">
+                        <Button type="button" variant="ghost" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                          {isUploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
+                        </Button>
+                      </Card>
+                    </div>
+                     <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
+                     <FormMessage>{form.formState.errors.imageUrls?.message}</FormMessage>
+                  </div>
                 </form>
               </Form>
             </div>
+             <DialogFooter className="border-t pt-4">
+                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                <Button type="submit" form="product-form">Salvar Produto</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardHeader>
       <CardContent>
-        {/* Tabela de produtos */}
+         <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Imagem</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Preço</TableHead>
+                <TableHead>Estoque</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {products.map(product => (
+                <TableRow key={product.id}>
+                  <TableCell><Image src={product.imageUrls[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover" /></TableCell>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell>{product.promoPrice ? <div className='flex flex-col'><span className='line-through text-muted-foreground text-xs'>{formatCurrency(product.price)}</span><span>{formatCurrency(product.promoPrice)}</span></div> : formatCurrency(product.price)}</TableCell>
+                  <TableCell>{product.stock ?? 'N/A'}</TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Button variant="outline" size="icon" onClick={() => handleEdit(product)}><Edit className="h-4 w-4" /></Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild><Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Tem certeza?</AlertDialogTitle><AlertDialogDescription>Esta ação não pode ser desfeita. Isso excluirá o produto permanentemente.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(product.id)} className="bg-destructive hover:bg-destructive/90">Sim, excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
       </CardContent>
     </Card>
   );
