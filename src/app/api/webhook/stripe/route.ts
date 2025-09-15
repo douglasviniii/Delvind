@@ -17,7 +17,7 @@ const formatDate = (timestamp: any) => {
 
 export async function POST(req: Request) {
   const stripeSecretKey = "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";
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; // Usaremos apenas uma por enquanto para simplificar
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   try {
     if (!stripeSecretKey) {
@@ -116,9 +116,27 @@ export async function POST(req: Request) {
                 });
             }
         } else if (source === 'loja_delvind') {
+            // Find user by email
+            const customerEmail = session.customer_details?.email;
+            if (!customerEmail) {
+                console.error('No customer email found in session.');
+                return NextResponse.json({ received: true });
+            }
+
+            const usersRef = db.collection('users');
+            const userQuery = usersRef.where('email', '==', customerEmail).limit(1);
+            const userSnapshot = await userQuery.get();
+            let userId: string | null = null;
+            
+            if (!userSnapshot.empty) {
+                userId = userSnapshot.docs[0].id;
+            }
+
+            // Create Order
             const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
             const orderData = {
               customerDetails: session.customer_details,
+              customerId: userId,
               amountTotal: session.amount_total! / 100,
               products: lineItems.data.map(item => ({
                 productId: item.price?.product,
@@ -132,6 +150,32 @@ export async function POST(req: Request) {
               stripeSessionId: session.id,
             };
             await db.collection('orders').add(orderData);
+
+            // Handle Subscription Activation
+            const cartItems = JSON.parse(session.metadata?.cartItems || '[]');
+            const subscriptionProduct = cartItems.find((item: any) => item.isSubscription);
+
+            if (userId && subscriptionProduct) {
+                const userRef = db.collection('users').doc(userId);
+                const userDoc = await userRef.get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const existingServices = userData?.services || [];
+                    const newService = {
+                        id: `sub_${subscriptionProduct.id}`,
+                        name: subscriptionProduct.name,
+                        active: true,
+                        link: '',
+                    };
+                    // Avoid duplicate services
+                    const serviceExists = existingServices.some((s: any) => s.id === newService.id);
+                    if (!serviceExists) {
+                        await userRef.update({
+                            services: admin.firestore.FieldValue.arrayUnion(newService)
+                        });
+                    }
+                }
+            }
         }
     }
 

@@ -90,6 +90,8 @@ export async function POST(req: NextRequest) {
                 quantity: 1,
             });
         }
+        // Associate items with metadata for the webhook
+        metadata.cartItems = JSON.stringify(cartItems.map((item: any) => ({id: item.id, name: item.name, isSubscription: !!item.isSubscription})));
 
     } else if (financeRecordId) { // Modo Financeiro (iniciado pelo cliente)
         if (!amount || !title || !customerEmail) {
@@ -126,7 +128,6 @@ export async function POST(req: NextRequest) {
         customer_email: customerEmail,
     };
     
-    // For subscriptions, we need to allow boleto and card
     if (mode === 'subscription') {
       sessionParams.subscription_data = {
         payment_settings: {
