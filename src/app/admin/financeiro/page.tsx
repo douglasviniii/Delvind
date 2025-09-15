@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { db } from '../../../lib/firebase';
+import { db, auth } from '../../../lib/firebase';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, addDoc, writeBatch, getDocs, where, getDoc, deleteDoc } from 'firebase/firestore';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
@@ -377,87 +377,106 @@ export default function FinanceiroPage() {
   }
 
 
-  const handleConfigSubmit = async (values: z.infer<typeof configChargeSchema>) => {
-    if (!selectedRecord) return;
+    const handleConfigSubmit = async (values: z.infer<typeof configChargeSchema>) => {
+        if (!selectedRecord) return;
+        setIsProcessingStripe(true);
 
-    const batch = writeBatch(db);
-    const originalRecordRef = doc(db, 'finance', selectedRecord.id);
+        const clientDocRef = doc(db, 'users', selectedRecord.clientId);
+        const clientSnap = await getDoc(clientDocRef);
+        const clientEmail = clientSnap.exists() ? clientSnap.data().email : '';
 
-    try {
-        if (values.paymentType === 'installments' && values.installments && values.installments > 0) {
-            let remainingAmount = selectedRecord.totalAmount;
-            const installmentCount = values.installments;
-            
-            // Handle down payment (Entrada)
-            if (values.downPayment && parseCurrency(values.downPayment) > 0) {
-                const downPaymentAmount = parseCurrency(values.downPayment);
-                remainingAmount -= downPaymentAmount;
-
-                const downPaymentRef = doc(collection(db, 'finance'));
-                batch.set(downPaymentRef, {
-                    ...selectedRecord,
-                    id: downPaymentRef.id,
-                    title: `${selectedRecord.title} - Entrada`,
-                    totalAmount: downPaymentAmount,
-                    status: 'A Receber', // Goes straight to be billed
-                    createdAt: serverTimestamp(),
-                    billingDate: new Date(), // Bill today
-                    dueDate: values.downPaymentDueDate || new Date(),
-                    gracePeriodEndDate: values.downPaymentDueDate || new Date(),
-                    entryType: 'installment', 
-                    originalBudgetId: selectedRecord.originalBudgetId || selectedRecord.id,
-                    installmentNumber: 0,
-                    interestRate: parseCurrency(values.interestRate),
+        // Se o gateway for Stripe, automatiza a geração e envio
+        if (values.gateway === 'stripe') {
+            try {
+                const response = await fetch('/api/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        financeRecordId: selectedRecord.id,
+                        amount: selectedRecord.totalAmount,
+                        title: selectedRecord.title,
+                        customerEmail: clientEmail,
+                    }),
                 });
-            }
 
-            const installmentAmount = remainingAmount / installmentCount;
-            for (let i = 1; i <= installmentCount; i++) {
-                const installmentRef = doc(collection(db, 'finance'));
-                batch.set(installmentRef, {
-                     ...selectedRecord,
-                     id: installmentRef.id,
-                     title: `${selectedRecord.title} - Parcela ${i}/${installmentCount}`,
-                     totalAmount: installmentAmount,
-                     status: 'A Receber',
-                     createdAt: serverTimestamp(),
-                     billingDate: addMonths(values.billingDate, i-1),
-                     dueDate: addMonths(values.dueDate, i-1),
-                     gracePeriodEndDate: addMonths(values.gracePeriodEndDate, i-1),
-                     entryType: 'installment',
-                     originalBudgetId: selectedRecord.originalBudgetId || selectedRecord.id,
-                     installmentNumber: i,
-                     interestRate: parseCurrency(values.interestRate),
+                const { sessionUrl, error } = await response.json();
+                if (error) throw new Error(error);
+
+                await updateDoc(doc(db, 'finance', selectedRecord.id), {
+                    paymentLink: sessionUrl,
+                    status: 'Cobrança Enviada',
+                    newInvoiceRequested: false,
                 });
-            }
+                toast({ title: "Cobrança Stripe Gerada!", description: "O link de pagamento foi gerado e o status atualizado para 'Cobrança Enviada'." });
 
-            batch.delete(originalRecordRef);
-            toast({ title: "Parcelamento Gerado!", description: "As parcelas foram criadas e movidas para 'A Receber'."});
-
-        } else {
-            const updateData: any = {
-                status: 'A Receber',
-                billingDate: values.billingDate,
-                dueDate: values.dueDate,
-                gracePeriodEndDate: values.gracePeriodEndDate,
-                interestRate: parseCurrency(values.interestRate),
-            };
-             if (values.paymentType === 'recurring' && values.recurringDay) {
-                updateData.recurringDay = values.recurringDay;
+            } catch (error: any) {
+                toast({ title: 'Erro ao gerar cobrança Stripe', description: error.message, variant: 'destructive'});
+            } finally {
+                setIsProcessingStripe(false);
+                setIsConfigModalOpen(false);
+                return;
             }
-            batch.update(originalRecordRef, updateData);
-            toast({ title: "Cobrança Configurada!", description: "O registro foi movido para 'A Receber'."});
         }
-        
-        await batch.commit();
 
-    } catch (error) {
-        console.error("Error generating invoice: ", error);
-        toast({ title: 'Erro', description: 'Não foi possível configurar a cobrança.', variant: 'destructive'});
-    } finally {
-        setIsConfigModalOpen(false);
-        setSelectedRecord(null);
-    }
+        // Fluxo manual para parcelamento e cobranças não-Stripe
+        const batch = writeBatch(db);
+        const originalRecordRef = doc(db, 'finance', selectedRecord.id);
+
+        try {
+            if (values.paymentType === 'installments' && values.installments && values.installments > 0) {
+                let remainingAmount = selectedRecord.totalAmount;
+                const installmentCount = values.installments;
+                
+                if (values.downPayment && parseCurrency(values.downPayment) > 0) {
+                    const downPaymentAmount = parseCurrency(values.downPayment);
+                    remainingAmount -= downPaymentAmount;
+
+                    const downPaymentRef = doc(collection(db, 'finance'));
+                    batch.set(downPaymentRef, {
+                        ...selectedRecord, id: downPaymentRef.id, title: `${selectedRecord.title} - Entrada`, totalAmount: downPaymentAmount,
+                        status: 'A Receber', createdAt: serverTimestamp(), billingDate: new Date(), dueDate: values.downPaymentDueDate || new Date(),
+                        gracePeriodEndDate: values.downPaymentDueDate || new Date(), entryType: 'installment', originalBudgetId: selectedRecord.originalBudgetId || selectedRecord.id,
+                        installmentNumber: 0, interestRate: parseCurrency(values.interestRate),
+                    });
+                }
+
+                const installmentAmount = remainingAmount / installmentCount;
+                for (let i = 1; i <= installmentCount; i++) {
+                    const installmentRef = doc(collection(db, 'finance'));
+                    batch.set(installmentRef, {
+                        ...selectedRecord, id: installmentRef.id, title: `${selectedRecord.title} - Parcela ${i}/${installmentCount}`, totalAmount: installmentAmount,
+                        status: 'A Receber', createdAt: serverTimestamp(), billingDate: addMonths(values.billingDate, i-1),
+                        dueDate: addMonths(values.dueDate, i-1), gracePeriodEndDate: addMonths(values.gracePeriodEndDate, i-1),
+                        entryType: 'installment', originalBudgetId: selectedRecord.originalBudgetId || selectedRecord.id,
+                        installmentNumber: i, interestRate: parseCurrency(values.interestRate),
+                    });
+                }
+
+                batch.delete(originalRecordRef);
+                toast({ title: "Parcelamento Gerado!", description: "As parcelas foram criadas e movidas para 'A Receber'."});
+
+            } else {
+                const updateData: any = {
+                    status: 'A Receber', billingDate: values.billingDate, dueDate: values.dueDate,
+                    gracePeriodEndDate: values.gracePeriodEndDate, interestRate: parseCurrency(values.interestRate),
+                };
+                if (values.paymentType === 'recurring' && values.recurringDay) {
+                    updateData.recurringDay = values.recurringDay;
+                }
+                batch.update(originalRecordRef, updateData);
+                toast({ title: "Cobrança Configurada!", description: "O registro foi movido para 'A Receber'."});
+            }
+            
+            await batch.commit();
+
+        } catch (error) {
+            console.error("Error generating invoice: ", error);
+            toast({ title: 'Erro', description: 'Não foi possível configurar a cobrança.', variant: 'destructive'});
+        } finally {
+            setIsConfigModalOpen(false);
+            setSelectedRecord(null);
+            setIsProcessingStripe(false);
+        }
   };
 
   const handleGenerateChargeSubmit = async (values: z.infer<typeof generateChargeSchema>) => {
@@ -710,6 +729,16 @@ export default function FinanceiroPage() {
             </DialogHeader>
             <Form {...configForm}>
                 <form id="config-charge-form" onSubmit={configForm.handleSubmit(handleConfigSubmit)} className="space-y-4 py-4">
+                     <FormField control={configForm.control} name="gateway" render={({ field }) => (
+                        <FormItem className="space-y-3"><FormLabel>Gateway de Pagamento</FormLabel>
+                            <FormControl>
+                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
+                                    <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="manual" /></FormControl><FormLabel className="font-normal">Manual</FormLabel></FormItem>
+                                    <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="stripe" /></FormControl><FormLabel className="font-normal">Stripe</FormLabel></FormItem>
+                                </RadioGroup>
+                            </FormControl><FormMessage />
+                        </FormItem>
+                    )} />
                     <FormField control={configForm.control} name="paymentType" render={({ field }) => (
                         <FormItem className="space-y-3"><FormLabel>Tipo de Pagamento</FormLabel>
                             <FormControl>
@@ -784,8 +813,8 @@ export default function FinanceiroPage() {
             </Form>
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setIsConfigModalOpen(false)}>Cancelar</Button>
-                <Button type="submit" form="config-charge-form">
-                  Salvar Configuração
+                <Button type="submit" form="config-charge-form" disabled={isProcessingStripe}>
+                  {isProcessingStripe ? 'Processando...' : 'Salvar Configuração'}
                 </Button>
             </DialogFooter>
         </DialogContent>
@@ -988,5 +1017,3 @@ export default function FinanceiroPage() {
     </>
   );
 }
-
-
