@@ -37,6 +37,8 @@ const productSchema = z.object({
   requiresShipping: z.boolean().default(false),
   freeShipping: z.boolean().default(false),
   imageUrls: z.array(z.object({ url: z.string().url() })).min(1, 'Adicione pelo menos uma imagem.'),
+  isSubscription: z.boolean().default(false),
+  subscriptionPrice: z.string().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -86,6 +88,8 @@ export function ManageProducts() {
       requiresShipping: false,
       freeShipping: false,
       imageUrls: [],
+      isSubscription: false,
+      subscriptionPrice: '0,00',
     },
   });
 
@@ -96,6 +100,7 @@ export function ManageProducts() {
 
   const hasStock = form.watch('hasStock');
   const isService = form.watch('isService');
+  const isSubscription = form.watch('isSubscription');
 
   useEffect(() => {
     const productsQuery = query(collection(db, 'store_products'), orderBy('name', 'asc'));
@@ -153,6 +158,8 @@ export function ManageProducts() {
         requiresShipping: !!fullData.requiresShipping,
         freeShipping: !!fullData.freeShipping,
         imageUrls: Array.isArray(fullData.imageUrls) ? fullData.imageUrls.map((url: string) => ({ url })) : [],
+        isSubscription: !!fullData.isSubscription,
+        subscriptionPrice: formatCurrency(fullData.subscriptionPrice),
       };
       setEditingProduct(dataToEdit);
       form.reset(dataToEdit);
@@ -172,9 +179,11 @@ export function ManageProducts() {
       promoPrice: parseCurrency(values.promoPrice),
       promoPrice2: parseCurrency(values.promoPrice2),
       stock: values.hasStock ? values.stock : null,
-      requiresShipping: !values.isService, // Deriva o `requiresShipping` do `isService`
-      freeShipping: !values.isService ? values.freeShipping : false, // Frete grátis só se aplica a produtos físicos
+      requiresShipping: !values.isService,
+      freeShipping: !values.isService ? values.freeShipping : false,
       imageUrls: values.imageUrls.map(img => img.url),
+      isSubscription: values.isSubscription,
+      subscriptionPrice: values.isSubscription ? parseCurrency(values.subscriptionPrice) : null,
     };
     delete (dataToSave as any).hasStock;
 
@@ -186,7 +195,7 @@ export function ManageProducts() {
       toast({ title: 'Produto Adicionado' });
     }
 
-    form.reset({ name: '', description: '', price: '0,00', categoryId: '', isService: false, hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
+    form.reset({ name: '', description: '', price: '0,00', categoryId: '', isService: false, hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [], isSubscription: false, subscriptionPrice: '0,00' });
     setEditingProduct(null);
     setIsDialogOpen(false);
   };
@@ -201,7 +210,7 @@ export function ManageProducts() {
         <Dialog open={isDialogOpen} onOpenChange={isOpen => {
             if (!isOpen) {
               setEditingProduct(null);
-              form.reset({ name: '', description: '', price: '0,00', categoryId: '', isService: false, hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
+              form.reset({ name: '', description: '', price: '0,00', categoryId: '', isService: false, hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [], isSubscription: false, subscriptionPrice: '0,00' });
             }
             setIsDialogOpen(isOpen);
           }}
@@ -239,6 +248,22 @@ export function ManageProducts() {
                       <SelectContent>{categories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}</SelectContent>
                     </Select><FormMessage /></FormItem>
                   )} />
+                   <div className="space-y-4 rounded-md border p-4">
+                     <FormField control={form.control} name="isSubscription" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between">
+                            <div>
+                                <FormLabel>É uma Assinatura Mensal?</FormLabel>
+                                <p className='text-xs text-muted-foreground'>Marque para configurar um preço de cobrança recorrente.</p>
+                            </div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                     )} />
+                     {isSubscription && (
+                        <FormField control={form.control} name="subscriptionPrice" render={({ field }) => (
+                            <FormItem><FormLabel>Preço da Assinatura (por mês)</FormLabel><FormControl><Input {...field} placeholder="99,90" /></FormControl><FormMessage /></FormItem>
+                        )} />
+                     )}
+                   </div>
                    <div className="space-y-4 rounded-md border p-4">
                      <FormField control={form.control} name="hasStock" render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between">
