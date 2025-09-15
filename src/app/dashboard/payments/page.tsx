@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,7 +25,7 @@ import {
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFooter } from '../../../components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/tabs';
 import { User } from 'firebase/auth';
-import { loadStripe } from '@stripe/stripe-js';
+import { differenceInCalendarDays, isPast, startOfDay } from 'date-fns';
 
 type FinancialRecord = {
   id: string;
@@ -35,9 +34,17 @@ type FinancialRecord = {
   status: 'A Receber' | 'Cobrança Enviada' | 'Recebido' | 'Pagamento Enviado' | 'Atrasado';
   createdAt: any;
   dueDate?: any;
+  gracePeriodEndDate?: any;
   paymentLink?: string;
   boletoCode?: string;
+  originalBudgetId?: string;
+  interestRate?: number;
 };
+
+type Budget = {
+    total: number;
+}
+
 
 export default function CustomerPaymentsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -65,7 +72,6 @@ export default function CustomerPaymentsPage() {
       return;
     };
     
-    // Query for pending, sent, and overdue invoices
     const pendingQuery = query(
         collection(db, 'finance'), 
         where('clientId', '==', user.uid),
@@ -73,7 +79,6 @@ export default function CustomerPaymentsPage() {
         orderBy('dueDate', 'asc')
     );
     
-    // Query for paid invoices
     const paidQuery = query(
         collection(db, 'finance'),
         where('clientId', '==', user.uid),
@@ -118,38 +123,65 @@ export default function CustomerPaymentsPage() {
     }
   }
 
-  const handleStripeCheckout = async (record: FinancialRecord) => {
+ const handleStripeCheckout = async (record: FinancialRecord) => {
     if (!user) return;
     setIsProcessingStripe(record.id);
+
+    let finalAmount = record.totalAmount;
+
     try {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        const customerEmail = userDoc.exists() ? userDoc.data().email : user.email;
-
-        const response = await fetch('/api/checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                financeRecordId: record.id,
-                amount: record.totalAmount,
-                title: record.title,
-                customerEmail: customerEmail,
-            }),
-        });
-
-        const { sessionUrl, error } = await response.json();
-        if (error) throw new Error(error);
-        if (sessionUrl) {
-            window.location.href = sessionUrl;
-        } else {
-            throw new Error("Não foi possível obter a URL de checkout.");
+      // Cálculo de juros para faturas atrasadas
+      const isOverdue = record.status === 'Atrasado' || (record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate())));
+      if (isOverdue && record.originalBudgetId && record.interestRate) {
+        const budgetRef = doc(db, 'budgets', record.originalBudgetId);
+        const budgetSnap = await getDoc(budgetRef);
+        if (budgetSnap.exists()) {
+          const budgetData = budgetSnap.data() as Budget;
+          const daysOverdue = differenceInCalendarDays(new Date(), record.gracePeriodEndDate.toDate());
+          if (daysOverdue > 0) {
+            const dailyRate = (record.interestRate / 100) / 30; // Taxa mensal para diária
+            const interestAmount = budgetData.total * dailyRate * daysOverdue;
+            finalAmount += interestAmount;
+            toast({
+              title: "Juros por Atraso Aplicados",
+              description: `Foram adicionados ${formatCurrency(interestAmount)} de juros ao valor final.`,
+              variant: "default",
+              duration: 6000,
+            });
+          }
         }
+      }
+
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const customerEmail = userDoc.exists() ? userDoc.data().email : user.email;
+
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          financeRecordId: record.id,
+          amount: finalAmount,
+          title: record.title,
+          customerEmail: customerEmail,
+        }),
+      });
+
+      const { sessionUrl, error } = await response.json();
+      if (error) throw new Error(error);
+      
+      if (sessionUrl) {
+        window.location.href = sessionUrl;
+      } else {
+        throw new Error("Não foi possível obter a URL de checkout.");
+      }
     } catch (error: any) {
-        toast({ title: 'Erro ao Pagar', description: error.message, variant: 'destructive'});
+      toast({ title: 'Erro ao Pagar', description: error.message, variant: 'destructive' });
     } finally {
-        setIsProcessingStripe(null);
+      setIsProcessingStripe(null);
     }
-  }
+  };
+
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -163,7 +195,8 @@ export default function CustomerPaymentsPage() {
   }
   
   const getStatusInfo = (record: FinancialRecord) => {
-    if (record.status === 'Atrasado') {
+    const isOverdue = record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate()));
+     if (record.status !== 'Recebido' && isOverdue) {
       return { text: 'Vencido', icon: <AlertTriangle className="mr-2 h-4 w-4 text-red-500" />, className: 'bg-red-100 text-red-800' };
     }
     switch (record.status) {
@@ -192,7 +225,7 @@ export default function CustomerPaymentsPage() {
     }
     
     // Se o status for 'Cobrança Enviada' ou 'Atrasado', mostra as opções de pagamento enviadas pelo admin.
-    if (record.status === 'Cobrança Enviada' || record.status === 'Atrasado') {
+    if (record.status === 'Cobrança Enviada' || record.status === 'Atrasado' || (record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate())))) {
       return (
         <div className="flex flex-col sm:flex-row items-stretch gap-2">
           {record.paymentLink && (
@@ -205,8 +238,7 @@ export default function CustomerPaymentsPage() {
               <Barcode className='mr-2 h-4 w-4'/>Boleto
             </Button>
           )}
-           {(record.status === 'Cobrança Enviada' || record.status === 'Atrasado') && (
-            <AlertDialog>
+           <AlertDialog>
                 <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" className="flex-1"><Send className='mr-2 h-4 w-4'/>Já Paguei</Button>
                 </AlertDialogTrigger>
@@ -223,7 +255,6 @@ export default function CustomerPaymentsPage() {
                 </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-           )}
         </div>
       );
     }

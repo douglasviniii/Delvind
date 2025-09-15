@@ -152,7 +152,7 @@ export default function FinanceiroPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   
   const [selectedRecord, setSelectedRecord] = useState<FinancialRecord | null>(null);
-  const [interestDetails, setInterestDetails] = useState<{productTotal: number, daysOverdue: number} | null>(null);
+  const [interestDetails, setInterestDetails] = useState<{productTotal: number, daysOverdue: number, interestAmount: number} | null>(null);
   const { toast } = useToast();
 
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -272,10 +272,17 @@ export default function FinanceiroPage() {
         if (budgetSnap.exists()) {
             const budgetData = budgetSnap.data() as Budget;
             const daysOverdue = differenceInCalendarDays(new Date(), record.gracePeriodEndDate.toDate());
-            setInterestDetails({
-                productTotal: budgetData.total,
-                daysOverdue: daysOverdue > 0 ? daysOverdue : 0
-            });
+             if (daysOverdue > 0) {
+                const dailyRate = (record.interestRate / 100) / 30; // Monthly rate to daily
+                const interestAmount = budgetData.total * dailyRate * daysOverdue;
+                setInterestDetails({
+                    productTotal: budgetData.total,
+                    daysOverdue: daysOverdue,
+                    interestAmount: interestAmount,
+                });
+            } else {
+                 setInterestDetails(null);
+            }
         }
     } else {
         setInterestDetails(null);
@@ -833,8 +840,8 @@ export default function FinanceiroPage() {
                             <CardContent className='text-sm space-y-1'>
                                 <p><strong>Total do Produto:</strong> {formatCurrency(interestDetails.productTotal)}</p>
                                 <p><strong>Dias em Atraso:</strong> {interestDetails.daysOverdue}</p>
-                                <p><strong>Juros Acumulados:</strong> {formatCurrency((interestDetails.productTotal * (selectedRecord.interestRate / 100) / 30) * interestDetails.daysOverdue)}</p>
-                                <p className='font-bold text-base pt-2'><strong>Novo Valor Sugerido:</strong> {formatCurrency(selectedRecord.totalAmount + (interestDetails.productTotal * (selectedRecord.interestRate/100) / 30) * interestDetails.daysOverdue)}</p>
+                                <p><strong>Juros Acumulados:</strong> {formatCurrency(interestDetails.interestAmount)}</p>
+                                <p className='font-bold text-base pt-2'><strong>Novo Valor Sugerido:</strong> {formatCurrency(selectedRecord.totalAmount + interestDetails.interestAmount)}</p>
                             </CardContent>
                         </Card>
                      )}
