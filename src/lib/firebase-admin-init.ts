@@ -30,5 +30,3 @@ export function initializeAdminApp() {
     throw new Error('Não foi possível inicializar o Firebase Admin. Verifique o formato da variável de ambiente.');
   }
 }
-
-    
