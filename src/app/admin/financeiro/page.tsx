@@ -38,7 +38,7 @@ type FinancialRecord = {
   clientId: string;
   title: string;
   totalAmount: number;
-  status: 'A Cobrar' | 'A Receber' | 'Cobrança Enviada' | 'Pagamento Enviado' | 'Recebido' | 'Atrasado';
+  status: 'A Cobrar' | 'Cobrança Enviada' | 'Pagamento Enviado' | 'Recebido' | 'Atrasado';
   createdAt: any;
   billingDate?: any;
   dueDate?: any;
@@ -130,7 +130,7 @@ const reembolsoSchema = z.object({
 });
 
 
-type Status = 'A Cobrar' | 'A Receber' | 'Cobrança Enviada' | 'Pagamento Enviado' | 'Recebido' | 'Atrasado';
+type Status = 'A Cobrar' | 'Cobrança Enviada' | 'Pagamento Enviado' | 'Recebido' | 'Atrasado';
 
 const parseCurrency = (value: string | number | undefined): number => {
     if (typeof value === 'number') return value;
@@ -607,11 +607,6 @@ export default function FinanceiroPage() {
                                         </Button>
                                     )}
                                     
-                                    {tabName === 'sent' && record.status !== 'Recebido' && (
-                                         <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleOpenGenerateChargeModal(record);}}>
-                                            <Link2 className="mr-2 h-4 w-4" /> Anexar Link/Boleto
-                                        </Button>
-                                    )}
                                     {tabName === 'analyzing' && (
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
