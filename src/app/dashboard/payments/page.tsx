@@ -78,7 +78,7 @@ export default function CustomerPaymentsPage() {
     const pendingQuery = query(
         collection(db, 'finance'), 
         where('clientId', '==', user.uid),
-        where('status', 'in', ['A Receber', 'Cobrança Enviada', 'Pagamento Enviado', 'Atrasado']),
+        where('status', 'in', ['Cobrança Enviada', 'Pagamento Enviado', 'Atrasado']),
         orderBy('dueDate', 'asc')
     );
     
@@ -175,7 +175,12 @@ export default function CustomerPaymentsPage() {
         const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
         if (stripe) {
             const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
-            if (stripeError) throw stripeError;
+            if (stripeError) {
+                console.error("Stripe checkout error:", stripeError);
+                // Fallback to URL redirection if redirectToCheckout fails for some reason
+                if (sessionUrl) window.location.href = sessionUrl;
+                else throw stripeError;
+            }
         } else {
              throw new Error("Stripe.js falhou ao carregar.");
         }
