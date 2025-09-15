@@ -117,10 +117,7 @@ export default function ClientsPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [newServiceName, setNewServiceName] = useState('');
   const [isSavingServices, setIsSavingServices] = useState(false);
-  
-  const [isEditDatesModalOpen, setIsEditDatesModalOpen] = useState(false);
-  const [newDueDate, setNewDueDate] = useState<Date | undefined>();
-
+    
   const [isReparcelamentoModalOpen, setIsReparcelamentoModalOpen] = useState(false);
   const [newInstallmentCount, setNewInstallmentCount] = useState(1);
   const [newBillingDate, setNewBillingDate] = useState<Date | undefined>(new Date());
@@ -223,45 +220,6 @@ export default function ClientsPage() {
     setIsInstallmentsModalOpen(true);
   };
   
-  const handleUpdateInstallmentDates = async () => {
-    if (!newDueDate || installments.length === 0) {
-        toast({ title: "Erro", description: "Selecione uma nova data de vencimento.", variant: "destructive" });
-        return;
-    }
-
-    const firstOpenInstallmentIndex = installments.findIndex(inst => inst.status !== 'Recebido');
-
-    if (firstOpenInstallmentIndex === -1) {
-        toast({ title: "Aviso", description: "Todas as parcelas já foram pagas.", variant: "default" });
-        setIsEditDatesModalOpen(false);
-        return;
-    }
-    
-    const batch = writeBatch(db);
-
-    for (let i = firstOpenInstallmentIndex; i < installments.length; i++) {
-        const installment = installments[i];
-        const monthOffset = i - firstOpenInstallmentIndex;
-        const newDateForInstallment = addMonths(newDueDate, monthOffset);
-
-        const installmentRef = doc(db, 'finance', installment.id);
-        batch.update(installmentRef, { dueDate: newDateForInstallment });
-    }
-
-    try {
-        await batch.commit();
-        toast({ title: "Sucesso!", description: "As datas de vencimento foram atualizadas." });
-        // Re-fetch installments to show updated dates
-        handleViewDetails(activeRecord!);
-    } catch(e) {
-        console.error(e);
-        toast({ title: "Erro", description: "Não foi possível atualizar as datas.", variant: "destructive" });
-    } finally {
-        setIsEditDatesModalOpen(false);
-        setNewDueDate(undefined);
-    }
-  };
-
   const handleReparcelamento = async () => {
     setIsReparcelando(true);
     if (!activeRecord || !selectedCustomer || !newBillingDate || !newInstallmentDueDate || !newGracePeriodDate) {
@@ -667,44 +625,11 @@ export default function ClientsPage() {
           </Tabs></div>
         </DialogContent></Dialog>
         
-        {/* Dates Edit Modal */}
-        <Dialog open={isEditDatesModalOpen} onOpenChange={setIsEditDatesModalOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Alterar Vencimentos</DialogTitle>
-                    <DialogDescription>
-                        Selecione a nova data de vencimento para a primeira parcela em aberto. As datas das parcelas seguintes serão ajustadas automaticamente.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className='py-4'>
-                    <Label>Nova data de vencimento</Label>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn("w-full justify-start text-left font-normal", !newDueDate && "text-muted-foreground")}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {newDueDate ? format(newDueDate, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={newDueDate} onSelect={setNewDueDate} initialFocus />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsEditDatesModalOpen(false)}>Cancelar</Button>
-                    <Button onClick={handleUpdateInstallmentDates}>Salvar Novas Datas</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
         {/* Reparcelamento Modal */}
         <Dialog open={isReparcelamentoModalOpen} onOpenChange={setIsReparcelamentoModalOpen}>
             <DialogContent className='sm:max-w-2xl'>
                 <DialogHeader>
-                    <DialogTitle>Reparcelar Dívida</DialogTitle>
+                    <DialogTitle>Renegociar Dívida</DialogTitle>
                     <DialogDescription>
                         Defina as novas condições. O sistema calculará o novo valor e recriará as cobranças.
                     </DialogDescription>
@@ -735,7 +660,7 @@ export default function ClientsPage() {
                      </div>
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <Label>Data da Fatura</Label>
+                            <Label>Data da Fatura (Ciclo)</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !newBillingDate && "text-muted-foreground")}>
@@ -774,7 +699,7 @@ export default function ClientsPage() {
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => setIsReparcelamentoModalOpen(false)}>Cancelar</Button>
-                    <Button onClick={handleReparcelamento} disabled={isReparcelando}>{isReparcelando ? "Processando..." : "Confirmar Reparcelamento"}</Button>
+                    <Button onClick={handleReparcelamento} disabled={isReparcelando}>{isReparcelando ? "Processando..." : "Confirmar Renegociação"}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -792,13 +717,9 @@ export default function ClientsPage() {
             </div>
             <DialogFooter className="sm:justify-between mt-4 flex-wrap gap-2">
                 <div className="flex gap-2 items-center">
-                    <Button variant="secondary" onClick={() => setIsEditDatesModalOpen(true)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Alterar Vencimentos
-                    </Button>
-                     <Button variant="secondary" onClick={() => setIsReparcelamentoModalOpen(true)}>
+                    <Button variant="secondary" onClick={() => setIsReparcelamentoModalOpen(true)}>
                         <RefreshCcw className="mr-2 h-4 w-4" />
-                        Reparcelar
+                        Renegociar Dívida
                     </Button>
                 </div>
                 <div className="flex gap-2">
@@ -831,3 +752,5 @@ export default function ClientsPage() {
     </>
   );
 }
+
+    
