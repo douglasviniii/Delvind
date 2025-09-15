@@ -16,22 +16,17 @@ const formatDate = (timestamp: any) => {
 }
 
 export async function POST(req: Request) {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecrets = [
-    process.env.STRIPE_WEBHOOK_SECRET,
-    process.env.STRIPE_WEBHOOK_SECRET_PROD,
-  ].filter((secret): secret is string => !!secret);
-
-  if (!stripeSecretKey) {
-    console.error('Stripe secret key is not set in environment variables.');
-    return NextResponse.json({ error: 'A chave secreta da Stripe (STRIPE_SECRET_KEY) não está configurada no servidor.' }, { status: 500 });
-  }
-  if (webhookSecrets.length === 0) {
-    console.error('Nenhum segredo de webhook configurado nas variáveis de ambiente.');
-    return NextResponse.json({ error: 'Nenhum segredo de webhook (STRIPE_WEBHOOK_SECRET, STRIPE_WEBHOOK_SECRET_PROD) configurado no servidor.' }, { status: 500 });
-  }
+  const stripeSecretKey = "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";
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; // Usaremos apenas uma por enquanto para simplificar
 
   try {
+    if (!stripeSecretKey) {
+      throw new Error('A chave secreta da Stripe (STRIPE_SECRET_KEY) não está configurada no servidor.');
+    }
+    if (!webhookSecret) {
+      throw new Error('O segredo do webhook (STRIPE_WEBHOOK_SECRET) não está configurado no servidor.');
+    }
+    
     const stripe = new Stripe(stripeSecretKey, {
         apiVersion: '2024-06-20',
     });
@@ -47,36 +42,21 @@ export async function POST(req: Request) {
     const db = admin.firestore(adminApp);
     let event: Stripe.Event | undefined;
 
-    for (const secret of webhookSecrets) {
-        try {
-        event = stripe.webhooks.constructEvent(payload, signature, secret);
-        break;
-        } catch (err: any) {
-            // Se um segredo falhar, o loop continua para tentar o próximo.
-            console.log(`Falha ao verificar webhook com um dos segredos.`);
-        }
+    try {
+      event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    } catch (err: any) {
+      console.error(`⚠️  Webhook signature verification failed: ${err.message}`);
+      return NextResponse.json({ error: 'Webhook signature verification failed.' }, { status: 400 });
     }
 
-    if (!event) {
-        console.error('A verificação da assinatura do webhook falhou para todos os segredos fornecidos.');
-        return NextResponse.json({ error: 'A verificação da assinatura do webhook falhou.' }, { status: 400 });
-    }
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
         
-        // O ID do registro financeiro DEVE ser passado no metadata da sessão de checkout
         const financeRecordId = session.metadata?.financeRecordId;
-        
-        if (!financeRecordId) {
-            console.error('Metadata `financeRecordId` não encontrado na sessão de checkout.');
-            // Se for de outra fonte (ex: loja), ignorar por enquanto
-            if (session.metadata?.source !== 'loja_delvind') {
-               return NextResponse.json({ error: 'Finance record ID is missing.' }, { status: 400 });
-            }
-        }
+        const source = session.metadata?.source;
 
-        if (financeRecordId) {
+        if (source === 'financeiro_delvind' && financeRecordId) {
             const financeRecordRef = db.collection('finance').doc(financeRecordId);
             const financeRecordSnap = await financeRecordRef.get();
 
@@ -87,14 +67,12 @@ export async function POST(req: Request) {
 
             const financeData = financeRecordSnap.data()!;
 
-            // 1. Atualiza o status do registro financeiro para "Recebido"
             await financeRecordRef.update({
                 status: 'Recebido',
                 paymentGateway: 'stripe',
                 stripeSessionId: session.id,
             });
 
-            // 2. Cria um recibo na coleção 'receipts'
             const newReceiptRef = db.collection('receipts').doc();
             const receiptData = {
                 id: newReceiptRef.id,
@@ -103,15 +81,14 @@ export async function POST(req: Request) {
                 financeRecordId: financeRecordId,
                 title: financeData.title,
                 originalAmount: financeData.totalAmount,
-                interestAmount: 0, // Lógica de juros pode ser adicionada aqui se o Stripe informar
-                totalAmount: session.amount_total! / 100, // Valor total pago em reais
+                interestAmount: 0,
+                totalAmount: session.amount_total! / 100,
                 paidAt: admin.firestore.FieldValue.serverTimestamp(),
                 originalBudgetId: financeData.originalBudgetId || null,
                 viewedByClient: false,
             };
             await newReceiptRef.set(receiptData);
 
-            // 3. Envia o e-mail de notificação
             const clientEmail = financeData.clientEmail || session.customer_details?.email;
             if (clientEmail) {
                 const emailContent = `
@@ -138,16 +115,23 @@ export async function POST(req: Request) {
                         },
                 });
             }
-        }
-    }
-
-    // Lógica para quando um pedido da loja é finalizado
-    if (event.type === 'checkout.session.completed' && event.data.object.metadata?.source === 'loja_delvind') {
-        const session = event.data.object as Stripe.Checkout.Session;
-        try {
-            // Código para criar o pedido na coleção 'orders'
-        } catch (error) {
-            //...
+        } else if (source === 'loja_delvind') {
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+            const orderData = {
+              customerDetails: session.customer_details,
+              amountTotal: session.amount_total! / 100,
+              products: lineItems.data.map(item => ({
+                productId: item.price?.product,
+                name: item.description,
+                quantity: item.quantity,
+                price: item.price?.unit_amount ? item.price.unit_amount / 100 : 0
+              })),
+              status: 'Pendente',
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              shippingDetails: session.shipping_details,
+              stripeSessionId: session.id,
+            };
+            await db.collection('orders').add(orderData);
         }
     }
 

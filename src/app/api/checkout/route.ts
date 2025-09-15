@@ -3,13 +3,13 @@ import { NextResponse, NextRequest } from 'next/server';
 import Stripe from 'stripe';
 
 export async function POST(req: NextRequest) {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeSecretKey) {
-    console.error('Stripe secret key is not set in environment variables.');
-    return NextResponse.json({ error: 'A chave secreta da Stripe não está configurada no servidor. Adicione STRIPE_SECRET_KEY às suas variáveis de ambiente.' }, { status: 500 });
-  }
+  const stripeSecretKey = "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";
 
   try {
+    if (!stripeSecretKey) {
+      throw new Error('A chave secreta da Stripe não está configurada no servidor.');
+    }
+    
     const stripe = new Stripe(stripeSecretKey, {
         apiVersion: '2024-06-20',
     });
@@ -38,7 +38,9 @@ export async function POST(req: NextRequest) {
         }));
         
         const requiresShipping = cartItems.some((item: any) => item.requiresShipping);
-        if (requiresShipping && shippingCost > 0) {
+        const allItemsHaveFreeShipping = cartItems.filter((i: any) => i.requiresShipping).every((i: any) => i.freeShipping);
+
+        if (requiresShipping && !allItemsHaveFreeShipping && shippingCost > 0) {
             line_items.push({
                 price_data: {
                     currency: 'brl',
@@ -48,6 +50,7 @@ export async function POST(req: NextRequest) {
                 quantity: 1,
             });
         }
+
     } else if (financeRecordId) { // Modo Financeiro
         if (!amount || !title || !customerEmail) {
             return NextResponse.json({ error: 'Dados da fatura incompletos.' }, { status: 400 });
