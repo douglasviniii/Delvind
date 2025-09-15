@@ -14,6 +14,18 @@ const webhookSecrets = [
   process.env.STRIPE_WEBHOOK_SECRET_PROD,
 ].filter((secret): secret is string => !!secret);
 
+
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+const formatDate = (timestamp: any) => {
+    if (timestamp && timestamp.toDate) {
+      return timestamp.toDate().toLocaleDateString('pt-BR');
+    }
+    return 'Data inválida';
+}
+
 export async function POST(req: Request) {
   const payload = await req.text();
   const signature = req.headers.get('stripe-signature');
@@ -90,6 +102,34 @@ export async function POST(req: Request) {
             viewedByClient: false,
         };
         await newReceiptRef.set(receiptData);
+
+        // 3. Envia o e-mail de notificação
+        const clientEmail = financeData.clientEmail || session.customer_details?.email;
+        if (clientEmail) {
+            const emailContent = `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <h1 style="color: #6d28d9;">Recibo de Pagamento - Delvind</h1>
+                    <p>Olá, ${financeData.clientName},</p>
+                    <p>Confirmamos o recebimento do seu pagamento referente a <strong>${financeData.title}</strong>.</p>
+                    <hr>
+                    <h3>Detalhes do Pagamento</h3>
+                    <p><strong>Valor Total Pago:</strong> ${formatCurrency(receiptData.totalAmount)}</p>
+                    <p><strong>Data do Pagamento:</strong> ${new Date().toLocaleDateString('pt-BR')}</p>
+                    <p><strong>ID do Recibo:</strong> ${receiptData.id.slice(0, 8).toUpperCase()}</p>
+                    <hr>
+                    <p>Seu recibo completo já está disponível no seu painel de cliente.</p>
+                    <p>Agradecemos pela sua confiança!</p>
+                    <p>Atenciosamente,<br>Equipe Delvind</p>
+                </div>
+            `;
+            await db.collection('mail').add({
+                 to: clientEmail,
+                 message: {
+                     subject: `Seu Recibo de Pagamento - ${financeData.title}`,
+                     html: emailContent,
+                 },
+            });
+        }
       
     } catch (error: any) {
         console.error('Error processing webhook:', error);
