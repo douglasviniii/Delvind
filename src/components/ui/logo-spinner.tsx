@@ -11,7 +11,7 @@ type LogoSpinnerProps = {
 export function LogoSpinner({ className }: LogoSpinnerProps) {
     return (
         <div className={cn("flex items-center justify-center", className)}>
-            <AnimatedLogo className="w-6 h-6" />
+            <AnimatedLogo className="w-10 h-10" />
         </div>
     );
 }
