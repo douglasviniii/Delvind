@@ -121,8 +121,7 @@ export default function CartPage() {
         throw new Error(error);
       }
       
-      const stripePromise = loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
-      const stripe = await stripePromise;
+      const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
       if (stripe) {
         const { error } = await stripe.redirectToCheckout({ sessionId });
         if (error) {
