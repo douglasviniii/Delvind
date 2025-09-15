@@ -78,7 +78,7 @@ export default function CustomerPaymentsPage() {
     const pendingQuery = query(
         collection(db, 'finance'), 
         where('clientId', '==', user.uid),
-        where('status', 'in', ['Cobrança Enviada', 'Pagamento Enviado', 'Atrasado']),
+        where('status', 'in', ['Cobrança Enviada', 'Atrasado']),
         orderBy('dueDate', 'asc')
     );
     
@@ -112,18 +112,6 @@ export default function CustomerPaymentsPage() {
   const handleOpenBoletoModal = (code: string) => {
     setSelectedBoletoCode(code);
     setIsBoletoModalOpen(true);
-  }
-
-  const handleMarkAsPaid = async (recordId: string) => {
-    try {
-        const recordRef = doc(db, 'finance', recordId);
-        await updateDoc(recordRef, { 
-            status: 'Pagamento Enviado',
-        });
-        toast({ title: 'Aviso Enviado!', description: 'A administração foi notificada sobre seu pagamento e irá confirmar em breve.' });
-    } catch (error) {
-        toast({ title: 'Erro', description: 'Não foi possível notificar o pagamento.', variant: 'destructive' });
-    }
   }
 
  const handleStripeCheckout = async (record: FinancialRecord) => {
@@ -177,6 +165,7 @@ export default function CustomerPaymentsPage() {
             const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
             if (stripeError) {
                 console.error("Stripe checkout error:", stripeError);
+                // If redirectToCheckout fails, try the URL fallback
                 if (sessionUrl) window.location.href = sessionUrl;
                 else throw stripeError;
             }
@@ -184,6 +173,7 @@ export default function CustomerPaymentsPage() {
              throw new Error("Stripe.js falhou ao carregar.");
         }
       } else if (sessionUrl) {
+         // Fallback if no sessionId is returned but a URL is
          window.location.href = sessionUrl;
       } else {
         throw new Error("Não foi possível obter a sessão de checkout.");
@@ -226,15 +216,15 @@ export default function CustomerPaymentsPage() {
 
   const renderPaymentActions = (record: FinancialRecord) => {
     const isOverdue = record.status === 'Atrasado' || (record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate())));
-    
+
     if (record.status === 'Cobrança Enviada' || isOverdue) {
       return (
         <div className="flex flex-col sm:flex-row items-stretch gap-2">
-           <Button size="sm" className="flex-1" onClick={() => handleStripeCheckout(record)} disabled={isProcessingStripe === record.id}>
-                {isProcessingStripe === record.id ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <CreditCard className='mr-2 h-4 w-4' />}
-                {isProcessingStripe === record.id ? 'Processando...' : 'Pagar Agora'}
-            </Button>
-           {record.boletoCode && (
+          <Button size="sm" className="flex-1" onClick={() => handleStripeCheckout(record)} disabled={isProcessingStripe === record.id}>
+            {isProcessingStripe === record.id ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <CreditCard className='mr-2 h-4 w-4' />}
+            {isProcessingStripe === record.id ? 'Processando...' : 'Pagar Agora'}
+          </Button>
+          {record.boletoCode && (
             <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleOpenBoletoModal(record.boletoCode!)}>
               <Barcode className='mr-2 h-4 w-4'/>Boleto
             </Button>
@@ -242,7 +232,7 @@ export default function CustomerPaymentsPage() {
         </div>
       );
     }
-    
+  
     if (record.status === 'Pagamento Enviado') {
       return <Badge variant="secondary" className='bg-gray-200 text-gray-700 mt-2'>Pagamento em análise</Badge>;
     }
