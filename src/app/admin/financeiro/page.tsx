@@ -29,6 +29,7 @@ import { Label } from '../../../components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../../components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../../components/ui/select';
+import { loadStripe } from '@stripe/stripe-js';
 
 
 type FinancialRecord = {
@@ -157,6 +158,8 @@ export default function FinanceiroPage() {
 
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [approvedRefunds, setApprovedRefunds] = useState<ApprovedRefund[]>([]);
+  const [isProcessingStripe, setIsProcessingStripe] = useState(false);
+
 
   const configForm = useForm<z.infer<typeof configChargeSchema>>({
     resolver: zodResolver(configChargeSchema),
@@ -376,9 +379,39 @@ export default function FinanceiroPage() {
 
   const handleConfigSubmit = async (values: z.infer<typeof configChargeSchema>) => {
     if (!selectedRecord) return;
-    
+
     if (values.gateway === 'stripe') {
-        toast({ title: "Em Breve!", description: "A integração com Stripe será implementada nas próximas atualizações."});
+        setIsProcessingStripe(true);
+        try {
+            const clientDoc = await getDoc(doc(db, 'users', selectedRecord.clientId));
+            const clientEmail = clientDoc.exists() ? clientDoc.data().email : '';
+
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    financeRecordId: selectedRecord.id,
+                    amount: selectedRecord.totalAmount,
+                    title: selectedRecord.title,
+                    customerEmail: clientEmail,
+                }),
+            });
+            const { sessionId, error } = await response.json();
+            if(error) throw new Error(error);
+
+            const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
+            if(stripe) {
+                await stripe.redirectToCheckout({ sessionId });
+            } else {
+                throw new Error("Stripe.js não carregou.");
+            }
+        } catch (error: any) {
+            console.error("Stripe Checkout Error:", error);
+            toast({ title: "Erro ao gerar cobrança", description: error.message, variant: "destructive"});
+        } finally {
+            setIsProcessingStripe(false);
+            setIsConfigModalOpen(false);
+        }
         return;
     }
 
@@ -816,7 +849,9 @@ export default function FinanceiroPage() {
             </Form>
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setIsConfigModalOpen(false)}>Cancelar</Button>
-                <Button type="submit" form="config-charge-form">Salvar Configuração</Button>
+                <Button type="submit" form="config-charge-form" disabled={isProcessingStripe}>
+                  {isProcessingStripe ? 'Processando...' : 'Salvar Configuração'}
+                </Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>

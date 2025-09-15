@@ -8,43 +8,64 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { cartItems, shippingCost } = await req.json();
+    const { cartItems, shippingCost, financeRecordId, amount, title, customerEmail } = await req.json();
 
-    if (!cartItems || cartItems.length === 0) {
-      return NextResponse.json({ error: 'O carrinho está vazio.' }, { status: 400 });
-    }
+    let line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+    const metadata: { [key: string]: string } = {};
 
-    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = cartItems.map((item: any) => ({
-      price_data: {
-        currency: 'brl',
-        product_data: {
-          name: item.name,
-          images: [item.imageUrl],
-        },
-        unit_amount: Math.round((item.promoPrice || item.price) * 100), // Preço em centavos
-      },
-      quantity: item.quantity,
-    }));
-    
-    const requiresShipping = cartItems.some((item: any) => item.requiresShipping);
+    if (cartItems) { // Modo Loja
+        if (cartItems.length === 0) {
+            return NextResponse.json({ error: 'O carrinho está vazio.' }, { status: 400 });
+        }
+        metadata.source = 'loja_delvind';
 
-    if (requiresShipping && shippingCost > 0) {
+        line_items = cartItems.map((item: any) => ({
+            price_data: {
+                currency: 'brl',
+                product_data: {
+                name: item.name,
+                images: [item.imageUrl],
+                },
+                unit_amount: Math.round((item.promoPrice || item.price) * 100),
+            },
+            quantity: item.quantity,
+        }));
+        
+        const requiresShipping = cartItems.some((item: any) => item.requiresShipping);
+        if (requiresShipping && shippingCost > 0) {
+            line_items.push({
+                price_data: {
+                    currency: 'brl',
+                    product_data: { name: 'Custo de Envio' },
+                    unit_amount: Math.round(shippingCost * 100),
+                },
+                quantity: 1,
+            });
+        }
+    } else if (financeRecordId) { // Modo Financeiro
+        if (!amount || !title || !customerEmail) {
+            return NextResponse.json({ error: 'Dados da fatura incompletos.' }, { status: 400 });
+        }
+        metadata.financeRecordId = financeRecordId;
+        metadata.source = 'financeiro_delvind';
+        
         line_items.push({
             price_data: {
                 currency: 'brl',
                 product_data: {
-                    name: 'Custo de Envio',
+                    name: title,
                 },
-                unit_amount: Math.round(shippingCost * 100),
+                unit_amount: Math.round(amount * 100),
             },
             quantity: 1,
         });
+    } else {
+        return NextResponse.json({ error: 'Requisição inválida.' }, { status: 400 });
     }
 
-    // Use a URL da requisição para construir as URLs de sucesso e cancelamento
     const origin = req.nextUrl.origin;
-    const success_url = `${origin}/loja/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancel_url = `${origin}/loja/cart`;
+    const success_url = cartItems ? `${origin}/loja/success?session_id={CHECKOUT_SESSION_ID}` : `${origin}/dashboard/payments?payment_status=success`;
+    const cancel_url = cartItems ? `${origin}/loja/cart` : `${origin}/dashboard/payments`;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card', 'boleto'],
@@ -52,11 +73,8 @@ export async function POST(req: NextRequest) {
       mode: 'payment',
       success_url,
       cancel_url,
-      ...(requiresShipping && {
-        shipping_address_collection: {
-            allowed_countries: ['BR'],
-        },
-      })
+      metadata,
+      customer_email: customerEmail,
     });
 
     return NextResponse.json({ sessionId: session.id });
