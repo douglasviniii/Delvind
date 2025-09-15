@@ -2,13 +2,14 @@
 import { NextResponse, NextRequest } from 'next/server';
 import Stripe from 'stripe';
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-
 export async function POST(req: NextRequest) {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    console.error('Stripe secret key is not set in environment variables.');
+    return NextResponse.json({ error: 'A chave secreta da Stripe não está configurada no servidor. Adicione STRIPE_SECRET_KEY às suas variáveis de ambiente.' }, { status: 500 });
+  }
+
   try {
-    if (!stripeSecretKey) {
-        throw new Error('A variável de ambiente STRIPE_SECRET_KEY não está definida.');
-    }
     const stripe = new Stripe(stripeSecretKey, {
         apiVersion: '2024-06-20',
     });
