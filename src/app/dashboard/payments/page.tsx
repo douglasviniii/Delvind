@@ -177,7 +177,6 @@ export default function CustomerPaymentsPage() {
             const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
             if (stripeError) {
                 console.error("Stripe checkout error:", stripeError);
-                // Fallback to URL redirection if redirectToCheckout fails for some reason
                 if (sessionUrl) window.location.href = sessionUrl;
                 else throw stripeError;
             }
@@ -226,7 +225,7 @@ export default function CustomerPaymentsPage() {
   }
 
   const renderPaymentActions = (record: FinancialRecord) => {
-    const isOverdue = record.status !== 'Recebido' && record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate()));
+    const isOverdue = record.status === 'Atrasado' || (record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate())));
     
     if (record.status === 'Cobrança Enviada' || isOverdue) {
       return (
@@ -240,23 +239,6 @@ export default function CustomerPaymentsPage() {
               <Barcode className='mr-2 h-4 w-4'/>Boleto
             </Button>
           )}
-           <AlertDialog>
-                <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1"><Send className='mr-2 h-4 w-4'/>Já Paguei</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar Envio de Pagamento?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                    Esta ação notificará a administração que você realizou o pagamento desta fatura. A confirmação final será feita pela equipe da Delvind.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleMarkAsPaid(record.id)}>Sim, já paguei</AlertDialogAction>
-                </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
       );
     }
