@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '../../../lib/firebase';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, addDoc, writeBatch, getDocs, where, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, addDoc, writeBatch, getDocs, where, getDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
