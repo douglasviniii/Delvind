@@ -380,48 +380,6 @@ export default function FinanceiroPage() {
   const handleConfigSubmit = async (values: z.infer<typeof configChargeSchema>) => {
     if (!selectedRecord) return;
 
-    if (values.gateway === 'stripe') {
-        setIsProcessingStripe(true);
-        try {
-            const clientDoc = await getDoc(doc(db, 'users', selectedRecord.clientId));
-            const clientEmail = clientDoc.exists() ? clientDoc.data().email : '';
-
-            const response = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    financeRecordId: selectedRecord.id,
-                    amount: selectedRecord.totalAmount,
-                    title: selectedRecord.title,
-                    customerEmail: clientEmail,
-                }),
-            });
-            const { sessionId, sessionUrl, error } = await response.json();
-
-            if (error) {
-                throw new Error(error);
-            }
-            if (sessionUrl) {
-                window.location.href = sessionUrl;
-            } else {
-                // Fallback for older Stripe versions or just in case
-                const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
-                if (stripe && sessionId) {
-                    await stripe.redirectToCheckout({ sessionId });
-                } else {
-                    throw new Error("Falha ao obter sessão do Stripe.");
-                }
-            }
-        } catch (error: any) {
-            console.error("Stripe Checkout Error:", error);
-            toast({ title: "Erro ao gerar cobrança", description: error.message, variant: "destructive"});
-        } finally {
-            setIsProcessingStripe(false);
-            setIsConfigModalOpen(false);
-        }
-        return;
-    }
-
     const batch = writeBatch(db);
     const originalRecordRef = doc(db, 'finance', selectedRecord.id);
 
@@ -752,36 +710,6 @@ export default function FinanceiroPage() {
             </DialogHeader>
             <Form {...configForm}>
                 <form id="config-charge-form" onSubmit={configForm.handleSubmit(handleConfigSubmit)} className="space-y-4 py-4">
-                    <FormField
-                      control={configForm.control}
-                      name="gateway"
-                      render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormLabel>Gateway de Pagamento</FormLabel>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              className="flex gap-4"
-                            >
-                              <FormItem className="flex items-center space-x-2">
-                                <FormControl>
-                                  <RadioGroupItem value="manual" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Manual</FormLabel>
-                              </FormItem>
-                              <FormItem className="flex items-center space-x-2">
-                                <FormControl>
-                                  <RadioGroupItem value="stripe" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Stripe</FormLabel>
-                              </FormItem>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                     <FormField control={configForm.control} name="paymentType" render={({ field }) => (
                         <FormItem className="space-y-3"><FormLabel>Tipo de Pagamento</FormLabel>
                             <FormControl>
@@ -856,8 +784,8 @@ export default function FinanceiroPage() {
             </Form>
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setIsConfigModalOpen(false)}>Cancelar</Button>
-                <Button type="submit" form="config-charge-form" disabled={isProcessingStripe}>
-                  {isProcessingStripe ? 'Processando...' : 'Salvar Configuração'}
+                <Button type="submit" form="config-charge-form">
+                  Salvar Configuração
                 </Button>
             </DialogFooter>
         </DialogContent>
@@ -1060,4 +988,5 @@ export default function FinanceiroPage() {
     </>
   );
 }
+
 
