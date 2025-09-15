@@ -8,22 +8,48 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+// Lista de segredos de webhook a partir de variáveis de ambiente
+const webhookSecrets = [
+  process.env.STRIPE_WEBHOOK_SECRET,
+  process.env.STRIPE_WEBHOOK_SECRET_PROD,
+  // Adicione mais variáveis de ambiente para outras chaves, se necessário
+].filter((secret): secret is string => !!secret);
 
 export async function POST(req: Request) {
   const payload = await req.text();
   const signature = req.headers.get('stripe-signature');
 
-  let event: Stripe.Event;
+  if (!signature) {
+    return NextResponse.json({ error: 'No stripe-signature header found.' }, { status: 400 });
+  }
+  
+  if (webhookSecrets.length === 0) {
+      console.error('No webhook secrets configured in environment variables.');
+      return NextResponse.json({ error: 'Webhook secret not configured on server.' }, { status: 500 });
+  }
+
   const adminApp = initializeAdminApp();
   const db = admin.firestore(adminApp);
+  let event: Stripe.Event | undefined;
 
-  try {
-    event = stripe.webhooks.constructEvent(payload, signature!, webhookSecret);
-  } catch (err: any) {
-    console.error(`Webhook signature verification failed: ${err.message}`);
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+  // Tenta validar o evento com cada segredo configurado
+  for (const secret of webhookSecrets) {
+    try {
+      event = stripe.webhooks.constructEvent(payload, signature, secret);
+      // Se a construção for bem-sucedida, saia do loop
+      break;
+    } catch (err: any) {
+      // Se der erro, continua para tentar o próximo segredo
+      console.log(`Webhook signature verification failed with one secret, trying next...`);
+    }
   }
+
+  // Se nenhum segredo validou o evento, retorna erro.
+  if (!event) {
+    console.error('Webhook signature verification failed for all provided secrets.');
+    return NextResponse.json({ error: 'Webhook signature verification failed.' }, { status: 400 });
+  }
+
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
