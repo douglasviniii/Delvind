@@ -90,16 +90,6 @@ export async function POST(req: Request) {
             viewedByClient: false,
         };
         await newReceiptRef.set(receiptData);
-
-        // 3. (Opcional, mas recomendado) Envia um e-mail de confirmação
-        const mailRef = db.collection('mail').doc();
-        await mailRef.set({
-            to: session.customer_details?.email || financeData.clientEmail,
-            message: {
-                subject: `Pagamento Confirmado: ${financeData.title}`,
-                html: `<h1>Pagamento Recebido!</h1><p>Olá, ${financeData.clientName}.</p><p>Seu pagamento de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(receiptData.totalAmount)} para "${financeData.title}" foi confirmado com sucesso.</p><p>Obrigado!</p><p>Equipe Delvind</p>`,
-            },
-        });
       
     } catch (error: any) {
         console.error('Error processing webhook:', error);
