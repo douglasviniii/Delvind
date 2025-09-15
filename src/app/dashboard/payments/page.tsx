@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -200,8 +201,6 @@ export default function CustomerPaymentsPage() {
       return { text: 'Vencido', icon: <AlertTriangle className="mr-2 h-4 w-4 text-red-500" />, className: 'bg-red-100 text-red-800' };
     }
     switch (record.status) {
-      case 'A Receber':
-        return { text: 'Aguardando Emissão', icon: <Clock className="mr-2 h-4 w-4 text-blue-500" />, className: 'bg-blue-100 text-blue-800' };
       case 'Cobrança Enviada':
         return { text: 'Aguardando Pagamento', icon: <Clock className="mr-2 h-4 w-4 text-orange-500" />, className: 'bg-orange-100 text-orange-800' };
       case 'Pagamento Enviado':
@@ -209,31 +208,22 @@ export default function CustomerPaymentsPage() {
       case 'Recebido':
         return { text: 'Pago', icon: <CheckCircle className="mr-2 h-4 w-4 text-green-500" />, className: 'bg-green-100 text-green-800' };
       default:
-        return { text: record.status, icon: null, className: '' };
+        return { text: record.status, icon: <Clock className="mr-2 h-4 w-4 text-blue-500" />, className: 'bg-blue-100 text-blue-800' };
     }
   }
 
   const renderPaymentActions = (record: FinancialRecord) => {
-    // Se o status for 'A Receber', mostra o botão para pagar com Stripe.
-    if (record.status === 'A Receber') {
-      return (
-        <Button size="sm" className="w-full" onClick={() => handleStripeCheckout(record)} disabled={isProcessingStripe === record.id}>
-            {isProcessingStripe === record.id ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <CreditCard className='mr-2 h-4 w-4' />}
-            {isProcessingStripe === record.id ? 'Processando...' : 'Pagar Agora'}
-        </Button>
-      );
-    }
+    const isOverdue = record.status !== 'Recebido' && record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate()));
     
-    // Se o status for 'Cobrança Enviada' ou 'Atrasado', mostra as opções de pagamento enviadas pelo admin.
-    if (record.status === 'Cobrança Enviada' || record.status === 'Atrasado' || (record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate())))) {
+    // Se o status for 'Cobrança Enviada' ou 'Atrasado', mostra as opções de pagamento.
+    if (record.status === 'Cobrança Enviada' || isOverdue) {
       return (
         <div className="flex flex-col sm:flex-row items-stretch gap-2">
-          {record.paymentLink && (
-            <Button asChild size="sm" className="flex-1">
-              <Link href={record.paymentLink} target="_blank"><CreditCard className='mr-2 h-4 w-4'/>Cartão/Pix</Link>
+           <Button size="sm" className="flex-1" onClick={() => handleStripeCheckout(record)} disabled={isProcessingStripe === record.id}>
+                {isProcessingStripe === record.id ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <CreditCard className='mr-2 h-4 w-4' />}
+                {isProcessingStripe === record.id ? 'Processando...' : 'Pagar Agora'}
             </Button>
-          )}
-          {record.boletoCode && (
+           {record.boletoCode && (
             <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleOpenBoletoModal(record.boletoCode!)}>
               <Barcode className='mr-2 h-4 w-4'/>Boleto
             </Button>

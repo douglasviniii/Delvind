@@ -398,7 +398,7 @@ export default function FinanceiroPage() {
                     const downPaymentRef = doc(collection(db, 'finance'));
                     batch.set(downPaymentRef, {
                         ...selectedRecord, id: downPaymentRef.id, title: `${selectedRecord.title} - Entrada`, totalAmount: downPaymentAmount,
-                        status: 'A Receber', createdAt: serverTimestamp(), billingDate: new Date(), dueDate: values.downPaymentDueDate || new Date(),
+                        status: 'Cobrança Enviada', createdAt: serverTimestamp(), billingDate: new Date(), dueDate: values.downPaymentDueDate || new Date(),
                         gracePeriodEndDate: values.downPaymentDueDate || new Date(), entryType: 'installment', originalBudgetId: selectedRecord.originalBudgetId || selectedRecord.id,
                         installmentNumber: 0, interestRate: parseCurrency(values.interestRate),
                     });
@@ -409,7 +409,7 @@ export default function FinanceiroPage() {
                     const installmentRef = doc(collection(db, 'finance'));
                     batch.set(installmentRef, {
                         ...selectedRecord, id: installmentRef.id, title: `${selectedRecord.title} - Parcela ${i}/${installmentCount}`, totalAmount: installmentAmount,
-                        status: 'A Receber', createdAt: serverTimestamp(), billingDate: addMonths(values.billingDate, i-1),
+                        status: 'Cobrança Enviada', createdAt: serverTimestamp(), billingDate: addMonths(values.billingDate, i-1),
                         dueDate: addMonths(values.dueDate, i-1), gracePeriodEndDate: addMonths(values.gracePeriodEndDate, i-1),
                         entryType: 'installment', originalBudgetId: selectedRecord.originalBudgetId || selectedRecord.id,
                         installmentNumber: i, interestRate: parseCurrency(values.interestRate),
@@ -417,18 +417,18 @@ export default function FinanceiroPage() {
                 }
 
                 batch.delete(originalRecordRef);
-                toast({ title: "Parcelamento Gerado!", description: "As parcelas foram criadas e movidas para 'A Receber'."});
+                toast({ title: "Parcelamento Gerado!", description: "As parcelas foram criadas e movidas para 'Cobrança Enviada'."});
 
             } else {
                 const updateData: any = {
-                    status: 'A Receber', billingDate: values.billingDate, dueDate: values.dueDate,
+                    status: 'Cobrança Enviada', billingDate: values.billingDate, dueDate: values.dueDate,
                     gracePeriodEndDate: values.gracePeriodEndDate, interestRate: parseCurrency(values.interestRate),
                 };
                 if (values.paymentType === 'recurring' && values.recurringDay) {
                     updateData.recurringDay = values.recurringDay;
                 }
                 batch.update(originalRecordRef, updateData);
-                toast({ title: "Cobrança Configurada!", description: "O registro foi movido para 'A Receber'."});
+                toast({ title: "Cobrança Configurada!", description: "O registro foi movido para 'Cobrança Enviada'."});
             }
             
             await batch.commit();
@@ -535,14 +535,13 @@ export default function FinanceiroPage() {
       if (record.status === 'Recebido') return { text: 'Recebido', variant: 'default' as const, className: 'bg-green-600 text-white' };
       if (record.status === 'Pagamento Enviado') return { text: 'Em Análise', variant: 'default' as const, className: 'bg-purple-600 text-white' };
       if (record.status === 'Cobrança Enviada') return { text: 'Aguardando Pag.', variant: 'secondary' as const, className: 'bg-orange-500 text-white' };
-      if (record.status === 'A Receber') return { text: 'Aguardando Emissão', variant: 'default' as const, className: 'bg-blue-500 text-white' };
-      return { text: 'Aguardando Config.', variant: 'secondary' as const, className: 'bg-yellow-500 text-white' };
+      if (record.status === 'A Cobrar') return { text: 'Aguardando Config.', variant: 'secondary' as const, className: 'bg-yellow-500 text-white' };
+      return { text: record.status, variant: 'secondary' as const, className: 'bg-blue-500 text-white' };
   }
   
   const filteredRecords = useMemo(() => {
     return {
       awaitingConfig: allRecords.filter(r => r.status === 'A Cobrar'),
-      toBill: allRecords.filter(r => r.status === 'A Receber' && r.billingDate && isPast(r.billingDate.toDate())),
       sent: allRecords.filter(r => ['Cobrança Enviada', 'Atrasado'].includes(r.status) || (r.status !== 'Recebido' && r.gracePeriodEndDate && isPast(startOfDay(r.gracePeriodEndDate.toDate())))),
       analyzing: allRecords.filter(r => r.status === 'Pagamento Enviado'),
       paid: allRecords.filter(r => r.status === 'Recebido'),
@@ -607,14 +606,10 @@ export default function FinanceiroPage() {
                                             <DollarSign className="mr-2 h-4 w-4" /> Configurar
                                         </Button>
                                     )}
-                                    {tabName === 'toBill' && (
-                                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleOpenGenerateChargeModal(record);}}>
-                                            <Send className="mr-2 h-4 w-4" /> Enviar Cobrança
-                                        </Button>
-                                    )}
+                                    
                                     {tabName === 'sent' && record.status !== 'Recebido' && (
-                                        <Button variant={record.status === 'Atrasado' ? 'destructive' : 'outline'} size="sm" onClick={(e) => { e.stopPropagation(); handleOpenGenerateChargeModal(record);}}>
-                                            <Link2 className="mr-2 h-4 w-4" /> Reenviar Cobrança
+                                         <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleOpenGenerateChargeModal(record);}}>
+                                            <Link2 className="mr-2 h-4 w-4" /> Anexar Link/Boleto
                                         </Button>
                                     )}
                                     {tabName === 'analyzing' && (
@@ -641,7 +636,7 @@ export default function FinanceiroPage() {
                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleOpenDetailModal(record);}}>
                                         <Eye className="h-4 w-4" />
                                     </Button>
-                                     {['awaitingConfig', 'toBill', 'sent'].includes(tabName) && (
+                                     {['awaitingConfig', 'sent'].includes(tabName) && (
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={(e) => e.stopPropagation()}>
@@ -776,7 +771,7 @@ export default function FinanceiroPage() {
      <Dialog open={isGenerateChargeModalOpen} onOpenChange={setIsGenerateChargeModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-                <DialogTitle>Enviar Cobrança</DialogTitle>
+                <DialogTitle>Anexar Cobrança Manual</DialogTitle>
                 <DialogDescription>
                     Gere o link de pagamento ou boleto no seu gateway e cole as informações abaixo.
                 </DialogDescription>
@@ -816,7 +811,7 @@ export default function FinanceiroPage() {
                 </div>
                 <div className='flex gap-2'>
                     <Button variant="ghost" onClick={() => setIsGenerateChargeModalOpen(false)}>Cancelar</Button>
-                    <Button type="submit" form="generate-charge-form">Enviar para Cliente</Button>
+                    <Button type="submit" form="generate-charge-form">Anexar Cobrança</Button>
                 </div>
             </DialogFooter>
         </DialogContent>
@@ -942,18 +937,14 @@ export default function FinanceiroPage() {
       </div>
       
       <Tabs defaultValue="awaitingConfig" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="awaitingConfig">Aguardando Config.</TabsTrigger>
-          <TabsTrigger value="toBill">A Receber</TabsTrigger>
           <TabsTrigger value="sent">Cobranças Enviadas</TabsTrigger>
           <TabsTrigger value="analyzing">Pagamentos em Análise</TabsTrigger>
           <TabsTrigger value="paid">Histórico de Recebidos</TabsTrigger>
         </TabsList>
         <TabsContent value="awaitingConfig" className="mt-4">
           {renderTable(filteredRecords.awaitingConfig, "Nenhum item aguardando configuração.", 'awaitingConfig')}
-        </TabsContent>
-        <TabsContent value="toBill" className="mt-4">
-          {renderTable(filteredRecords.toBill, "Nenhuma conta a receber no momento.", 'toBill')}
         </TabsContent>
         <TabsContent value="sent" className="mt-4">
            {renderTable(filteredRecords.sent, "Nenhuma cobrança enviada encontrada.", 'sent')}
