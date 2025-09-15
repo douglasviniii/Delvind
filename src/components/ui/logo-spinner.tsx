@@ -1,7 +1,7 @@
 
 'use client';
 
-import Image from "next/image";
+import { AnimatedLogo } from "../layout/animated-logo";
 import { cn } from "../../lib/utils";
 
 type LogoSpinnerProps = {
@@ -10,13 +10,8 @@ type LogoSpinnerProps = {
 
 export function LogoSpinner({ className }: LogoSpinnerProps) {
     return (
-        <Image 
-            src="https://darkgreen-lark-741030.hostingersite.com/img/logo.png"
-            alt="Carregando..."
-            width={24}
-            height={24}
-            className={cn("animate-spin", className)}
-            priority
-        />
+        <div className={cn("flex items-center justify-center", className)}>
+            <AnimatedLogo className="w-6 h-6" />
+        </div>
     );
 }

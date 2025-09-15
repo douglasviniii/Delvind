@@ -235,7 +235,7 @@ export default function SettingsPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                         {loading ? <div className='h-20 bg-muted rounded-lg animate-pulse'></div> : (
+                         {loading ? <div className='h-20 flex items-center justify-center bg-muted rounded-lg'><LogoSpinner className="h-8 w-8" /></div> : (
                             <div className='space-y-1'>
                                 <label className="text-sm font-medium">ID de Acompanhamento do Google Analytics 4</label>
                                 <Input 
@@ -258,8 +258,8 @@ export default function SettingsPage() {
                     <CardContent className="space-y-6">
                         {loading ? (
                             <div className="space-y-4">
-                                <div className="h-20 bg-muted rounded-lg animate-pulse"></div>
-                                <div className="h-20 bg-muted rounded-lg animate-pulse"></div>
+                                <div className="h-20 flex items-center justify-center bg-muted rounded-lg"><LogoSpinner className="h-8 w-8" /></div>
+                                <div className="h-20 flex items-center justify-center bg-muted rounded-lg"><LogoSpinner className="h-8 w-8" /></div>
                             </div>
                         ) : (
                             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">

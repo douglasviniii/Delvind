@@ -379,7 +379,7 @@ export default function ChatPage() {
                             onClick={handleAdminSend}
                             disabled={isSending}
                         >
-                            {isSending ? <LogoSpinner className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                            {isSending ? <LogoSpinner className="w-4 h-4" /> : <Send className="w-5 h-5" />}
                         </Button>
                     </div>
                 </div>
@@ -411,7 +411,7 @@ export default function ChatPage() {
                 <div className="flex-1 overflow-y-auto">
                     {loadingConversations ? (
                         <div className="p-4 flex justify-center items-center h-full">
-                           <LogoSpinner className="w-8 h-8 text-muted-foreground" />
+                           <LogoSpinner className="w-8 h-8" />
                         </div>
                     ) : conversations.length > 0 ? (
                         <div className="divide-y">

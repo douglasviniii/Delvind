@@ -88,7 +88,7 @@ export default function CompanyInfoPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {loading ? <div className='flex justify-center py-10'><LogoSpinner className="mx-auto" /></div> : (
+                    {loading ? <div className='flex justify-center py-10'><LogoSpinner className="h-10 w-10" /></div> : (
                         <>
                             <div className='space-y-1'>
                                 <label className="text-sm font-medium">Razão Social</label>
