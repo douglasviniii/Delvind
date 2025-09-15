@@ -115,20 +115,22 @@ export default function CartPage() {
         body: JSON.stringify({ cartItems, shippingCost: (cartRequiresShipping && !allItemsHaveFreeShipping) ? (shippingInfo?.cost || 0) : 0 }),
       });
 
-      const { sessionId, error } = await response.json();
+      const { sessionId, sessionUrl, error } = await response.json();
 
       if (error) {
         throw new Error(error);
       }
       
-      const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
-      if (stripe) {
-        const { error } = await stripe.redirectToCheckout({ sessionId });
-        if (error) {
-          throw new Error(error.message);
-        }
+      if (sessionUrl) {
+          window.location.href = sessionUrl;
       } else {
-        throw new Error("Stripe.js não carregou.");
+        // Fallback for older Stripe versions or just in case
+        const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
+        if (stripe && sessionId) {
+            await stripe.redirectToCheckout({ sessionId });
+        } else {
+            throw new Error("Falha ao obter sessão do Stripe.");
+        }
       }
     } catch (error: any) {
       toast({
@@ -239,3 +241,4 @@ export default function CartPage() {
     </div>
   );
 }
+

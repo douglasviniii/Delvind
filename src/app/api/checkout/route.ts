@@ -3,7 +3,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import Stripe from 'stripe';
 
 export async function POST(req: NextRequest) {
-  const stripeSecretKey = "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";
+  const stripeSecretKey = "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";
 
   try {
     if (!stripeSecretKey) {
@@ -86,9 +86,10 @@ export async function POST(req: NextRequest) {
       customer_email: customerEmail,
     });
 
-    return NextResponse.json({ sessionId: session.id });
+    return NextResponse.json({ sessionId: session.id, sessionUrl: session.url });
   } catch (err: any) {
     console.error('Stripe Error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+

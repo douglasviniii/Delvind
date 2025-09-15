@@ -396,14 +396,21 @@ export default function FinanceiroPage() {
                     customerEmail: clientEmail,
                 }),
             });
-            const { sessionId, error } = await response.json();
-            if(error) throw new Error(error);
+            const { sessionId, sessionUrl, error } = await response.json();
 
-            const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
-            if(stripe) {
-                await stripe.redirectToCheckout({ sessionId });
+            if (error) {
+                throw new Error(error);
+            }
+            if (sessionUrl) {
+                window.location.href = sessionUrl;
             } else {
-                throw new Error("Stripe.js não carregou.");
+                // Fallback for older Stripe versions or just in case
+                const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
+                if (stripe && sessionId) {
+                    await stripe.redirectToCheckout({ sessionId });
+                } else {
+                    throw new Error("Falha ao obter sessão do Stripe.");
+                }
             }
         } catch (error: any) {
             console.error("Stripe Checkout Error:", error);
@@ -1053,3 +1060,4 @@ export default function FinanceiroPage() {
     </>
   );
 }
+
