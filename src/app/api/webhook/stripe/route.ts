@@ -4,7 +4,12 @@ import Stripe from 'stripe';
 import { initializeAdminApp } from '@/lib/firebase-admin-init';
 import * as admin from 'firebase-admin';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+  throw new Error('A variável de ambiente STRIPE_SECRET_KEY não está definida no servidor.');
+}
+
+const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2024-06-20',
 });
 
@@ -35,8 +40,8 @@ export async function POST(req: Request) {
   }
   
   if (webhookSecrets.length === 0) {
-      console.error('No webhook secrets configured in environment variables.');
-      return NextResponse.json({ error: 'Webhook secret not configured on server.' }, { status: 500 });
+      console.error('Nenhum segredo de webhook configurado nas variáveis de ambiente.');
+      return NextResponse.json({ error: 'Webhook secret não configurado no servidor.' }, { status: 500 });
   }
 
   const adminApp = initializeAdminApp();
@@ -53,8 +58,8 @@ export async function POST(req: Request) {
   }
 
   if (!event) {
-    console.error('Webhook signature verification failed for all provided secrets.');
-    return NextResponse.json({ error: 'Webhook signature verification failed.' }, { status: 400 });
+    console.error('A verificação da assinatura do webhook falhou para todos os segredos fornecidos.');
+    return NextResponse.json({ error: 'A verificação da assinatura do webhook falhou.' }, { status: 400 });
   }
 
   if (event.type === 'checkout.session.completed') {
@@ -64,7 +69,7 @@ export async function POST(req: Request) {
     const financeRecordId = session.metadata?.financeRecordId;
     
     if (!financeRecordId) {
-        console.error('Metadata `financeRecordId` not found in checkout session.');
+        console.error('Metadata `financeRecordId` não encontrado na sessão de checkout.');
         return NextResponse.json({ error: 'Finance record ID is missing.' }, { status: 400 });
     }
 
@@ -73,7 +78,7 @@ export async function POST(req: Request) {
         const financeRecordSnap = await financeRecordRef.get();
 
         if (!financeRecordSnap.exists) {
-            console.error(`Finance record with ID ${financeRecordId} not found.`);
+            console.error(`Registro financeiro com ID ${financeRecordId} não encontrado.`);
             return NextResponse.json({ error: 'Finance record not found.' }, { status: 404 });
         }
 
