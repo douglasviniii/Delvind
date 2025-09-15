@@ -241,18 +241,26 @@ export default function ClientsPage() {
         if (!budgetSnap.exists()) throw new Error("Orçamento original não encontrado.");
         const budgetData = budgetSnap.data();
 
-        const installmentsQuery = query(collection(db, 'finance'), where('originalBudgetId', '==', budgetId));
+        // Query all installments related to the budget that are NOT 'Recebido' (Paid)
+        const installmentsQuery = query(
+            collection(db, 'finance'), 
+            where('originalBudgetId', '==', budgetId),
+            where('status', '!=', 'Recebido')
+        );
         const installmentsSnap = await getDocs(installmentsQuery);
         
-        let totalPaid = 0;
-        const unpaidInstallmentRefs: any[] = [];
+        const batch = writeBatch(db);
+
+        // Delete all old, unpaid installments
         installmentsSnap.forEach(doc => {
-            const installment = doc.data();
-            if (installment.status === 'Recebido') {
-                totalPaid += installment.totalAmount;
-            } else {
-                unpaidInstallmentRefs.push(doc.ref);
-            }
+            batch.delete(doc.ref);
+        });
+        
+        let totalPaid = 0;
+        const paidInstallmentsQuery = query(collection(db, 'finance'), where('originalBudgetId', '==', budgetId), where('status', '==', 'Recebido'));
+        const paidInstallmentsSnap = await getDocs(paidInstallmentsQuery);
+        paidInstallmentsSnap.forEach(doc => {
+            totalPaid += doc.data().totalAmount;
         });
 
         const remainingDebt = budgetData.total - totalPaid;
@@ -262,10 +270,6 @@ export default function ClientsPage() {
             return;
         }
         const newInstallmentAmount = remainingDebt / newInstallmentCount;
-
-        const batch = writeBatch(db);
-
-        unpaidInstallmentRefs.forEach(ref => batch.delete(ref));
         
         for (let i = 1; i <= newInstallmentCount; i++) {
             const newInstallmentRef = doc(collection(db, 'finance'));
@@ -288,13 +292,13 @@ export default function ClientsPage() {
         
         await batch.commit();
 
-        toast({ title: "Sucesso!", description: "A dívida foi reparcelada com sucesso." });
+        toast({ title: "Sucesso!", description: "A dívida foi renegociada e as novas parcelas foram geradas." });
         setIsReparcelamentoModalOpen(false);
         setIsInstallmentsModalOpen(false);
 
     } catch (error) {
         console.error("Error during re-parceling:", error);
-        toast({ title: "Erro", description: "Ocorreu um erro ao tentar reparcelar a dívida.", variant: "destructive"});
+        toast({ title: "Erro", description: "Ocorreu um erro ao tentar renegociar a dívida.", variant: "destructive"});
     } finally {
         setIsReparcelando(false);
     }
@@ -752,5 +756,3 @@ export default function ClientsPage() {
     </>
   );
 }
-
-    
