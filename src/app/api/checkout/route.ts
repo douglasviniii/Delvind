@@ -130,20 +130,17 @@ export async function POST(req: NextRequest) {
     
     if (mode === 'subscription') {
       sessionParams.subscription_data = {
-        payment_settings: {
-          payment_method_options: {
-            card: {
-              request_three_d_secure: 'any',
-            },
-            boleto: {
-              expires_after_days: 7,
-            },
-          },
-          payment_method_types: ['card', 'boleto'],
-          save_default_payment_method: 'on_subscription',
-        },
         trial_period_days: 0,
       };
+      sessionParams.payment_method_options = {
+        card: {
+          request_three_d_secure: 'any',
+        },
+        boleto: {
+          expires_after_days: 7,
+        },
+      };
+      sessionParams.payment_method_collection = 'always';
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
