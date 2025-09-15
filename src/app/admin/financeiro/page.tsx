@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { db } from '../../../lib/firebase';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, addDoc, writeBatch, getDocs, where, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, addDoc, writeBatch, getDocs, where, getDoc, deleteDoc } from 'firebase/firestore';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Badge } from '../../../components/ui/badge';
 import { Skeleton } from '../../../components/ui/skeleton';
-import { PlusCircle, DollarSign, FileCheck, CalendarIcon, Link2, CheckCircle, HandCoins, Send, Eye, ArrowDownUp, FileWarning, XCircle, Receipt, Mail } from 'lucide-react';
+import { PlusCircle, DollarSign, FileCheck, CalendarIcon, Link2, CheckCircle, HandCoins, Send, Eye, ArrowDownUp, FileWarning, XCircle, Receipt, Mail, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -516,6 +516,15 @@ export default function FinanceiroPage() {
     }
   }
 
+  const handleDeleteRecord = async (recordId: string) => {
+    try {
+        await deleteDoc(doc(db, "finance", recordId));
+        toast({ title: "Registro Excluído", description: "A cobrança foi removida com sucesso."});
+    } catch (error) {
+        toast({ title: "Erro ao Excluir", description: "Não foi possível remover a cobrança.", variant: "destructive"});
+    }
+  }
+
 
   const formatCurrency = (value: number) => {
     if (typeof value !== 'number') return 'R$ 0,00';
@@ -604,7 +613,7 @@ export default function FinanceiroPage() {
                                         {getStatusInfo(record).text}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-right space-x-2">
+                                <TableCell className="text-right space-x-1">
                                     {tabName === 'awaitingConfig' && (
                                         <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleOpenConfigModal(record);}}>
                                             <DollarSign className="mr-2 h-4 w-4" /> Configurar
@@ -644,6 +653,27 @@ export default function FinanceiroPage() {
                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleOpenDetailModal(record);}}>
                                         <Eye className="h-4 w-4" />
                                     </Button>
+                                     {['awaitingConfig', 'toBill', 'sent'].includes(tabName) && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={(e) => e.stopPropagation()}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle>Excluir Registro?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Tem certeza que deseja excluir a cobrança "{record.title}"? Esta ação não pode ser desfeita.
+                                                </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/80" onClick={() => handleDeleteRecord(record.id)}>Sim, Excluir</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))
