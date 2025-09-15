@@ -27,6 +27,8 @@ import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, Di
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/tabs';
 import { User } from 'firebase/auth';
 import { differenceInCalendarDays, isPast, startOfDay } from 'date-fns';
+import { loadStripe } from '@stripe/stripe-js';
+
 
 type FinancialRecord = {
   id: string;
@@ -131,7 +133,6 @@ export default function CustomerPaymentsPage() {
     let finalAmount = record.totalAmount;
 
     try {
-      // Cálculo de juros para faturas atrasadas
       const isOverdue = record.status === 'Atrasado' || (record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate())));
       if (isOverdue && record.originalBudgetId && record.interestRate) {
         const budgetRef = doc(db, 'budgets', record.originalBudgetId);
@@ -140,13 +141,12 @@ export default function CustomerPaymentsPage() {
           const budgetData = budgetSnap.data() as Budget;
           const daysOverdue = differenceInCalendarDays(new Date(), record.gracePeriodEndDate.toDate());
           if (daysOverdue > 0) {
-            const dailyRate = (record.interestRate / 100) / 30; // Taxa mensal para diária
+            const dailyRate = (record.interestRate / 100) / 30;
             const interestAmount = budgetData.total * dailyRate * daysOverdue;
             finalAmount += interestAmount;
             toast({
               title: "Juros por Atraso Aplicados",
               description: `Foram adicionados ${formatCurrency(interestAmount)} de juros ao valor final.`,
-              variant: "default",
               duration: 6000,
             });
           }
@@ -168,13 +168,21 @@ export default function CustomerPaymentsPage() {
         }),
       });
 
-      const { sessionUrl, error } = await response.json();
+      const { sessionId, sessionUrl, error } = await response.json();
       if (error) throw new Error(error);
-      
-      if (sessionUrl) {
-        window.location.href = sessionUrl;
+
+      if (sessionId) {
+        const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
+        if (stripe) {
+            const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
+            if (stripeError) throw stripeError;
+        } else {
+             throw new Error("Stripe.js falhou ao carregar.");
+        }
+      } else if (sessionUrl) {
+         window.location.href = sessionUrl;
       } else {
-        throw new Error("Não foi possível obter a URL de checkout.");
+        throw new Error("Não foi possível obter a sessão de checkout.");
       }
     } catch (error: any) {
       toast({ title: 'Erro ao Pagar', description: error.message, variant: 'destructive' });
@@ -215,7 +223,6 @@ export default function CustomerPaymentsPage() {
   const renderPaymentActions = (record: FinancialRecord) => {
     const isOverdue = record.status !== 'Recebido' && record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate()));
     
-    // Se o status for 'Cobrança Enviada' ou 'Atrasado', mostra as opções de pagamento.
     if (record.status === 'Cobrança Enviada' || isOverdue) {
       return (
         <div className="flex flex-col sm:flex-row items-stretch gap-2">
