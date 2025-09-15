@@ -32,6 +32,7 @@ const productSchema = z.object({
   label: z.string().optional(),
   categoryId: z.string({ required_error: "A categoria é obrigatória." }),
   stock: z.coerce.number().optional(),
+  isService: z.boolean().default(false),
   hasStock: z.boolean().default(false),
   requiresShipping: z.boolean().default(false),
   freeShipping: z.boolean().default(false),
@@ -80,6 +81,7 @@ export function ManageProducts() {
       description: '',
       price: '0,00',
       categoryId: '',
+      isService: false,
       hasStock: false,
       requiresShipping: false,
       freeShipping: false,
@@ -93,7 +95,7 @@ export function ManageProducts() {
   });
 
   const hasStock = form.watch('hasStock');
-  const requiresShipping = form.watch('requiresShipping');
+  const isService = form.watch('isService');
 
   useEffect(() => {
     const productsQuery = query(collection(db, 'store_products'), orderBy('name', 'asc'));
@@ -120,10 +122,8 @@ export function ManageProducts() {
         const storagePath = `products/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, storagePath);
         
-        // Fazer upload do arquivo
         await uploadBytes(storageRef, file);
         
-        // Obter a URL pública de download
         const downloadURL = await getDownloadURL(storageRef);
         
         append({ url: downloadURL });
@@ -148,6 +148,7 @@ export function ManageProducts() {
         price: formatCurrency(fullData.price),
         promoPrice: formatCurrency(fullData.promoPrice),
         promoPrice2: formatCurrency(fullData.promoPrice2),
+        isService: !!fullData.isService,
         hasStock: !!fullData.stock,
         requiresShipping: !!fullData.requiresShipping,
         freeShipping: !!fullData.freeShipping,
@@ -171,7 +172,8 @@ export function ManageProducts() {
       promoPrice: parseCurrency(values.promoPrice),
       promoPrice2: parseCurrency(values.promoPrice2),
       stock: values.hasStock ? values.stock : null,
-      freeShipping: values.requiresShipping ? values.freeShipping : false,
+      requiresShipping: !values.isService, // Deriva o `requiresShipping` do `isService`
+      freeShipping: !values.isService ? values.freeShipping : false, // Frete grátis só se aplica a produtos físicos
       imageUrls: values.imageUrls.map(img => img.url),
     };
     delete (dataToSave as any).hasStock;
@@ -184,7 +186,7 @@ export function ManageProducts() {
       toast({ title: 'Produto Adicionado' });
     }
 
-    form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
+    form.reset({ name: '', description: '', price: '0,00', categoryId: '', isService: false, hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
     setEditingProduct(null);
     setIsDialogOpen(false);
   };
@@ -199,7 +201,7 @@ export function ManageProducts() {
         <Dialog open={isDialogOpen} onOpenChange={isOpen => {
             if (!isOpen) {
               setEditingProduct(null);
-              form.reset({ name: '', description: '', price: '0,00', categoryId: '', hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
+              form.reset({ name: '', description: '', price: '0,00', categoryId: '', isService: false, hasStock: false, requiresShipping: false, freeShipping: false, imageUrls: [] });
             }
             setIsDialogOpen(isOpen);
           }}
@@ -251,19 +253,32 @@ export function ManageProducts() {
                      )}
                    </div>
                    <div className="space-y-4 rounded-md border p-4">
-                     <FormField control={form.control} name="requiresShipping" render={({ field }) => (
+                     <FormField control={form.control} name="isService" render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between">
-                            <FormLabel>Requer Entrega (Produto Físico)?</FormLabel>
+                            <div>
+                                <FormLabel>Produto Digital / Serviço</FormLabel>
+                                <p className='text-xs text-muted-foreground'>Marque se for um produto digital ou serviço que não requer entrega física.</p>
+                            </div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                      )} />
-                     {requiresShipping && (
-                        <FormField control={form.control} name="freeShipping" render={({ field }) => (
+                     {!isService && (
+                       <>
+                        <FormField control={form.control} name="requiresShipping" render={({ field }) => (
                             <FormItem className="flex flex-row items-center justify-between mt-4">
-                                <FormLabel>Oferecer Frete Grátis?</FormLabel>
+                                <FormLabel>Requer Entrega?</FormLabel>
                                 <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             </FormItem>
                         )} />
+                        {form.watch('requiresShipping') && (
+                            <FormField control={form.control} name="freeShipping" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between mt-4">
+                                    <FormLabel>Oferecer Frete Grátis?</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )} />
+                        )}
+                       </>
                      )}
                    </div>
                   <FormField control={form.control} name="description" render={({ field }) => (
