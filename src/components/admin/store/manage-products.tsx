@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, Upload, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import TiptapEditor from '@/components/ui/tiptap-editor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -346,5 +346,3 @@ export function ManageProducts() {
     </Card>
   );
 }
-
-    
