@@ -5,20 +5,10 @@ import { initializeAdminApp } from '@/lib/firebase-admin-init';
 import * as admin from 'firebase-admin';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) {
-  throw new Error('A variável de ambiente STRIPE_SECRET_KEY não está definida no servidor.');
-}
-
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2024-06-20',
-});
-
-// Lista de segredos de webhook a partir de variáveis de ambiente
 const webhookSecrets = [
   process.env.STRIPE_WEBHOOK_SECRET,
   process.env.STRIPE_WEBHOOK_SECRET_PROD,
 ].filter((secret): secret is string => !!secret);
-
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -32,48 +22,55 @@ const formatDate = (timestamp: any) => {
 }
 
 export async function POST(req: Request) {
-  const payload = await req.text();
-  const signature = req.headers.get('stripe-signature');
-
-  if (!signature) {
-    return NextResponse.json({ error: 'No stripe-signature header found.' }, { status: 400 });
-  }
-  
-  if (webhookSecrets.length === 0) {
-      console.error('Nenhum segredo de webhook configurado nas variáveis de ambiente.');
-      return NextResponse.json({ error: 'Webhook secret não configurado no servidor.' }, { status: 500 });
-  }
-
-  const adminApp = initializeAdminApp();
-  const db = admin.firestore(adminApp);
-  let event: Stripe.Event | undefined;
-
-  for (const secret of webhookSecrets) {
-    try {
-      event = stripe.webhooks.constructEvent(payload, signature, secret);
-      break;
-    } catch (err: any) {
-      // Continua para o próximo segredo
+  try {
+    if (!stripeSecretKey) {
+        throw new Error('A variável de ambiente STRIPE_SECRET_KEY não está definida no servidor.');
     }
-  }
+    const stripe = new Stripe(stripeSecretKey, {
+        apiVersion: '2024-06-20',
+    });
 
-  if (!event) {
-    console.error('A verificação da assinatura do webhook falhou para todos os segredos fornecidos.');
-    return NextResponse.json({ error: 'A verificação da assinatura do webhook falhou.' }, { status: 400 });
-  }
+    const payload = await req.text();
+    const signature = req.headers.get('stripe-signature');
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
+    if (!signature) {
+        return NextResponse.json({ error: 'No stripe-signature header found.' }, { status: 400 });
+    }
     
-    // O ID do registro financeiro DEVE ser passado no metadata da sessão de checkout
-    const financeRecordId = session.metadata?.financeRecordId;
-    
-    if (!financeRecordId) {
-        console.error('Metadata `financeRecordId` não encontrado na sessão de checkout.');
-        return NextResponse.json({ error: 'Finance record ID is missing.' }, { status: 400 });
+    if (webhookSecrets.length === 0) {
+        console.error('Nenhum segredo de webhook configurado nas variáveis de ambiente.');
+        return NextResponse.json({ error: 'Webhook secret não configurado no servidor.' }, { status: 500 });
     }
 
-    try {
+    const adminApp = initializeAdminApp();
+    const db = admin.firestore(adminApp);
+    let event: Stripe.Event | undefined;
+
+    for (const secret of webhookSecrets) {
+        try {
+        event = stripe.webhooks.constructEvent(payload, signature, secret);
+        break;
+        } catch (err: any) {
+        // Continua para o próximo segredo
+        }
+    }
+
+    if (!event) {
+        console.error('A verificação da assinatura do webhook falhou para todos os segredos fornecidos.');
+        return NextResponse.json({ error: 'A verificação da assinatura do webhook falhou.' }, { status: 400 });
+    }
+
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object as Stripe.Checkout.Session;
+        
+        // O ID do registro financeiro DEVE ser passado no metadata da sessão de checkout
+        const financeRecordId = session.metadata?.financeRecordId;
+        
+        if (!financeRecordId) {
+            console.error('Metadata `financeRecordId` não encontrado na sessão de checkout.');
+            return NextResponse.json({ error: 'Finance record ID is missing.' }, { status: 400 });
+        }
+
         const financeRecordRef = db.collection('finance').doc(financeRecordId);
         const financeRecordSnap = await financeRecordRef.get();
 
@@ -128,29 +125,28 @@ export async function POST(req: Request) {
                 </div>
             `;
             await db.collection('mail').add({
-                 to: clientEmail,
-                 message: {
-                     subject: `Seu Recibo de Pagamento - ${financeData.title}`,
-                     html: emailContent,
-                 },
+                    to: clientEmail,
+                    message: {
+                        subject: `Seu Recibo de Pagamento - ${financeData.title}`,
+                        html: emailContent,
+                    },
             });
         }
-      
-    } catch (error: any) {
+    }
+
+    // Lógica para quando um pedido da loja é finalizado
+    if (event.type === 'checkout.session.completed' && event.data.object.metadata?.source === 'loja_delvind') {
+        const session = event.data.object as Stripe.Checkout.Session;
+        try {
+            // Código para criar o pedido na coleção 'orders'
+        } catch (error) {
+            //...
+        }
+    }
+
+    return NextResponse.json({ received: true });
+  } catch (error: any) {
         console.error('Error processing webhook:', error);
         return NextResponse.json({ error: 'Internal Server Error while processing webhook.' }, { status: 500 });
-    }
   }
-
-  // Lógica para quando um pedido da loja é finalizado
-  if (event.type === 'checkout.session.completed' && event.data.object.metadata?.source === 'loja_delvind') {
-     const session = event.data.object as Stripe.Checkout.Session;
-     try {
-         // Código para criar o pedido na coleção 'orders'
-     } catch (error) {
-         //...
-     }
-  }
-
-  return NextResponse.json({ received: true });
 }

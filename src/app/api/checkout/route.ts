@@ -2,18 +2,17 @@
 import { NextResponse, NextRequest } from 'next/server';
 import Stripe from 'stripe';
 
-// Stripe-Initialisierung außerhalb des Handlers, um die Wiederverwendung zu ermöglichen
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) {
-  throw new Error('A variável de ambiente STRIPE_SECRET_KEY não está definida.');
-}
-
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2024-06-20',
-});
 
 export async function POST(req: NextRequest) {
   try {
+    if (!stripeSecretKey) {
+        throw new Error('A variável de ambiente STRIPE_SECRET_KEY não está definida.');
+    }
+    const stripe = new Stripe(stripeSecretKey, {
+        apiVersion: '2024-06-20',
+    });
+
     const { cartItems, shippingCost, financeRecordId, amount, title, customerEmail } = await req.json();
 
     let line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
