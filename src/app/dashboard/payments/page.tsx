@@ -3,13 +3,13 @@
 
 import { useState, useEffect } from 'react';
 import { db, auth } from '../../../lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Badge } from '../../../components/ui/badge';
 import Link from 'next/link';
-import { DollarSign, Copy, CheckCircle, Clock, CreditCard, Barcode, AlertTriangle, Send } from 'lucide-react';
+import { DollarSign, Copy, CheckCircle, Clock, CreditCard, Barcode, AlertTriangle, Send, Loader2 } from 'lucide-react';
 import { Skeleton } from '../../../components/ui/skeleton';
 import { useToast } from '../../../hooks/use-toast';
 import {
@@ -26,6 +26,7 @@ import {
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFooter } from '../../../components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/tabs';
 import { User } from 'firebase/auth';
+import { loadStripe } from '@stripe/stripe-js';
 
 type FinancialRecord = {
   id: string;
@@ -47,6 +48,8 @@ export default function CustomerPaymentsPage() {
   const [isBoletoModalOpen, setIsBoletoModalOpen] = useState(false);
   const [selectedBoletoCode, setSelectedBoletoCode] = useState('');
   const { toast } = useToast();
+  const [isProcessingStripe, setIsProcessingStripe] = useState<string | null>(null);
+
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -66,7 +69,7 @@ export default function CustomerPaymentsPage() {
     const pendingQuery = query(
         collection(db, 'finance'), 
         where('clientId', '==', user.uid),
-        where('status', 'in', ['Cobrança Enviada', 'Pagamento Enviado', 'Atrasado']),
+        where('status', 'in', ['A Receber', 'Cobrança Enviada', 'Pagamento Enviado', 'Atrasado']),
         orderBy('dueDate', 'asc')
     );
     
@@ -91,7 +94,7 @@ export default function CustomerPaymentsPage() {
         unsubscribePending();
         unsubscribePaid();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, loading]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -115,6 +118,39 @@ export default function CustomerPaymentsPage() {
     }
   }
 
+  const handleStripeCheckout = async (record: FinancialRecord) => {
+    if (!user) return;
+    setIsProcessingStripe(record.id);
+    try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        const customerEmail = userDoc.exists() ? userDoc.data().email : user.email;
+
+        const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                financeRecordId: record.id,
+                amount: record.totalAmount,
+                title: record.title,
+                customerEmail: customerEmail,
+            }),
+        });
+
+        const { sessionUrl, error } = await response.json();
+        if (error) throw new Error(error);
+        if (sessionUrl) {
+            window.location.href = sessionUrl;
+        } else {
+            throw new Error("Não foi possível obter a URL de checkout.");
+        }
+    } catch (error: any) {
+        toast({ title: 'Erro ao Pagar', description: error.message, variant: 'destructive'});
+    } finally {
+        setIsProcessingStripe(null);
+    }
+  }
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
@@ -131,6 +167,8 @@ export default function CustomerPaymentsPage() {
       return { text: 'Vencido', icon: <AlertTriangle className="mr-2 h-4 w-4 text-red-500" />, className: 'bg-red-100 text-red-800' };
     }
     switch (record.status) {
+      case 'A Receber':
+        return { text: 'Aguardando Emissão', icon: <Clock className="mr-2 h-4 w-4 text-blue-500" />, className: 'bg-blue-100 text-blue-800' };
       case 'Cobrança Enviada':
         return { text: 'Aguardando Pagamento', icon: <Clock className="mr-2 h-4 w-4 text-orange-500" />, className: 'bg-orange-100 text-orange-800' };
       case 'Pagamento Enviado':
@@ -143,23 +181,34 @@ export default function CustomerPaymentsPage() {
   }
 
   const renderPaymentActions = (record: FinancialRecord) => {
+    // Se o status for 'A Receber', mostra o botão para pagar com Stripe.
+    if (record.status === 'A Receber') {
+      return (
+        <Button size="sm" className="w-full" onClick={() => handleStripeCheckout(record)} disabled={isProcessingStripe === record.id}>
+            {isProcessingStripe === record.id ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <CreditCard className='mr-2 h-4 w-4' />}
+            {isProcessingStripe === record.id ? 'Processando...' : 'Pagar Agora'}
+        </Button>
+      );
+    }
+    
+    // Se o status for 'Cobrança Enviada' ou 'Atrasado', mostra as opções de pagamento enviadas pelo admin.
     if (record.status === 'Cobrança Enviada' || record.status === 'Atrasado') {
       return (
-        <div className="flex flex-col sm:flex-row items-stretch gap-2 mt-4">
+        <div className="flex flex-col sm:flex-row items-stretch gap-2">
           {record.paymentLink && (
-            <Button asChild size="sm" className="w-full">
-              <Link href={record.paymentLink} target="_blank"><CreditCard className='mr-2 h-4 w-4'/>Pagar com Cartão/Pix</Link>
+            <Button asChild size="sm" className="flex-1">
+              <Link href={record.paymentLink} target="_blank"><CreditCard className='mr-2 h-4 w-4'/>Cartão/Pix</Link>
             </Button>
           )}
           {record.boletoCode && (
-            <Button variant="secondary" size="sm" className="w-full" onClick={() => handleOpenBoletoModal(record.boletoCode!)}>
-              <Barcode className='mr-2 h-4 w-4'/>Pagar com Boleto
+            <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleOpenBoletoModal(record.boletoCode!)}>
+              <Barcode className='mr-2 h-4 w-4'/>Boleto
             </Button>
           )}
            {(record.status === 'Cobrança Enviada' || record.status === 'Atrasado') && (
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full"><Send className='mr-2 h-4 w-4'/>Já Paguei</Button>
+                <Button variant="outline" size="sm" className="flex-1"><Send className='mr-2 h-4 w-4'/>Já Paguei</Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                 <AlertDialogHeader>
@@ -208,8 +257,12 @@ export default function CustomerPaymentsPage() {
                                 {getStatusInfo(record).text}
                             </Badge>
                         </div>
-                         {!isHistory && renderPaymentActions(record)}
                     </CardContent>
+                    {!isHistory && (
+                        <CardFooter>
+                             {renderPaymentActions(record)}
+                        </CardFooter>
+                    )}
                 </Card>
             ))}
        </div>
@@ -222,7 +275,7 @@ export default function CustomerPaymentsPage() {
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
-                {!isHistory && <TableHead className="text-right">Ações</TableHead>}
+                {!isHistory && <TableHead className="text-right w-[400px]">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -239,7 +292,9 @@ export default function CustomerPaymentsPage() {
                     </TableCell>
                     {!isHistory && (
                         <TableCell className="text-right">
-                            {renderPaymentActions(record)}
+                           <div className="flex justify-end gap-2">
+                             {renderPaymentActions(record)}
+                           </div>
                         </TableCell>
                     )}
                   </TableRow>
@@ -275,8 +330,8 @@ export default function CustomerPaymentsPage() {
                 </TabsList>
                 <TabsContent value="pending" className='p-4 md:p-6'>
                     <CardHeader className='p-0 pb-4'>
-                        <CardTitle>Minhas Faturas Pendentes</CardTitle>
-                        <CardDescription>Aqui estão todas as suas cobranças em aberto. Pagamentos recebidos desaparecerão desta lista.</CardDescription>
+                        <CardTitle>Minhas Faturas</CardTitle>
+                        <CardDescription>Aqui estão todas as suas cobranças em aberto. Pagamentos confirmados aparecerão no histórico.</CardDescription>
                     </CardHeader>
                     {loading ? (
                          <div className="space-y-4">

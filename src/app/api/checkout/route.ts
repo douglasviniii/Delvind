@@ -1,13 +1,14 @@
 
 import { NextResponse, NextRequest } from 'next/server';
 import Stripe from 'stripe';
+import { initializeAdminApp } from '@/lib/firebase-admin-init';
+import * as admin from 'firebase-admin';
 
 export async function POST(req: NextRequest) {
-  const stripeSecretKey = "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";
-
   try {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
-      throw new Error('A chave secreta da Stripe não está configurada no servidor.');
+      throw new Error('A variável de ambiente STRIPE_SECRET_KEY não está definida no servidor.');
     }
     
     const stripe = new Stripe(stripeSecretKey, {
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
             });
         }
 
-    } else if (financeRecordId) { // Modo Financeiro
+    } else if (financeRecordId) { // Modo Financeiro (iniciado pelo cliente)
         if (!amount || !title || !customerEmail) {
             return NextResponse.json({ error: 'Dados da fatura incompletos.' }, { status: 400 });
         }
