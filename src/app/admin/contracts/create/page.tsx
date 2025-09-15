@@ -449,7 +449,7 @@ export default function CreateContractPage() {
         </ol>
         <br/>
         <h3><strong>CLÁUSULA QUARTA - DO VALOR E DA FORMA DE PAGAMENTO</strong></h3>
-        <p>O valor total dos serviços contratados é de <strong>${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budget.total)}</strong>. A forma de pagamento, incluindo parcelas e vencimentos, será detalhada e gerenciada através do painel financeiro da CONTRATANTE na plataforma Delvind.</p>
+        <p>O valor total dos serviços contratados é de <strong>${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budget.total)}</strong>. A aprovação da Proposta Comercial correspondente a este serviço, realizada através do painel do cliente, constitui aceite eletrônico e autoriza a CONTRATADA a gerar as faturas e cobranças conforme os termos acordados.</p>
         <br/>
         <h3><strong>CLÁUSULA QUINTA - DO PRAZO E DA VIGÊNCIA</strong></h3>
         <p>O presente contrato tem vigência a partir da data de sua assinatura, com prazo para a execução dos serviços estipulado em [inserir prazo] dias, podendo ser prorrogado mediante acordo entre as partes.</p>

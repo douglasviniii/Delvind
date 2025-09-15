@@ -218,10 +218,15 @@ export default function CustomerBudgetViewPage() {
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Confirmar Aprovação</AlertDialogTitle><AlertDialogDescription>Ao aprovar, você concorda com os termos e valores apresentados. A equipe da Delvind entrará em contato para os próximos passos.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Aprovação e Aceite dos Termos</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Ao aprovar, você concorda com os valores e termos apresentados. Esta ação irá gerar as faturas correspondentes no seu painel financeiro e dará início à elaboração do contrato de serviço.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
                             <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleUpdateStatus('Aprovado')} className='bg-green-600 hover:bg-green-700'>Confirmar Aprovação</AlertDialogAction>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleUpdateStatus('Aprovado')} className='bg-green-600 hover:bg-green-700'>Aprovar e Gerar Faturas</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
