@@ -12,7 +12,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecrets = [
   process.env.STRIPE_WEBHOOK_SECRET,
   process.env.STRIPE_WEBHOOK_SECRET_PROD,
-  // Adicione mais variáveis de ambiente para outras chaves, se necessário
 ].filter((secret): secret is string => !!secret);
 
 export async function POST(req: Request) {
@@ -32,97 +31,90 @@ export async function POST(req: Request) {
   const db = admin.firestore(adminApp);
   let event: Stripe.Event | undefined;
 
-  // Tenta validar o evento com cada segredo configurado
   for (const secret of webhookSecrets) {
     try {
       event = stripe.webhooks.constructEvent(payload, signature, secret);
-      // Se a construção for bem-sucedida, saia do loop
       break;
     } catch (err: any) {
-      // Se der erro, continua para tentar o próximo segredo
-      console.log(`Webhook signature verification failed with one secret, trying next...`);
+      // Continua para o próximo segredo
     }
   }
 
-  // Se nenhum segredo validou o evento, retorna erro.
   if (!event) {
     console.error('Webhook signature verification failed for all provided secrets.');
     return NextResponse.json({ error: 'Webhook signature verification failed.' }, { status: 400 });
   }
 
-
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
+    
+    // O ID do registro financeiro DEVE ser passado no metadata da sessão de checkout
+    const financeRecordId = session.metadata?.financeRecordId;
+    
+    if (!financeRecordId) {
+        console.error('Metadata `financeRecordId` not found in checkout session.');
+        return NextResponse.json({ error: 'Finance record ID is missing.' }, { status: 400 });
+    }
 
     try {
-      const sessionWithLineItems = await stripe.checkout.sessions.retrieve(session.id, {
-        expand: ['line_items.data.price.product'],
-      });
+        const financeRecordRef = db.collection('finance').doc(financeRecordId);
+        const financeRecordSnap = await financeRecordRef.get();
 
-      const lineItems = sessionWithLineItems.line_items?.data || [];
+        if (!financeRecordSnap.exists) {
+            console.error(`Finance record with ID ${financeRecordId} not found.`);
+            return NextResponse.json({ error: 'Finance record not found.' }, { status: 404 });
+        }
+
+        const financeData = financeRecordSnap.data()!;
+
+        // 1. Atualiza o status do registro financeiro para "Recebido"
+        await financeRecordRef.update({
+            status: 'Recebido',
+            paymentGateway: 'stripe',
+            stripeSessionId: session.id,
+        });
+
+        // 2. Cria um recibo na coleção 'receipts'
+        const newReceiptRef = db.collection('receipts').doc();
+        const receiptData = {
+            id: newReceiptRef.id,
+            clientId: financeData.clientId,
+            clientName: financeData.clientName,
+            financeRecordId: financeRecordId,
+            title: financeData.title,
+            originalAmount: financeData.totalAmount,
+            interestAmount: 0, // Lógica de juros pode ser adicionada aqui se o Stripe informar
+            totalAmount: session.amount_total! / 100, // Valor total pago em reais
+            paidAt: admin.firestore.FieldValue.serverTimestamp(),
+            originalBudgetId: financeData.originalBudgetId || null,
+            viewedByClient: false,
+        };
+        await newReceiptRef.set(receiptData);
+
+        // 3. (Opcional, mas recomendado) Envia um e-mail de confirmação
+        const mailRef = db.collection('mail').doc();
+        await mailRef.set({
+            to: session.customer_details?.email || financeData.clientEmail,
+            message: {
+                subject: `Pagamento Confirmado: ${financeData.title}`,
+                html: `<h1>Pagamento Recebido!</h1><p>Olá, ${financeData.clientName}.</p><p>Seu pagamento de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(receiptData.totalAmount)} para "${financeData.title}" foi confirmado com sucesso.</p><p>Obrigado!</p><p>Equipe Delvind</p>`,
+            },
+        });
       
-      const orderData = {
-        stripeSessionId: session.id,
-        amountTotal: session.amount_total! / 100, // Convert from cents
-        customerDetails: session.customer_details,
-        shippingDetails: session.shipping_details,
-        paymentStatus: session.payment_status,
-        status: 'Pendente', // Initial order status
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        products: lineItems.map(item => {
-            const product = item.price?.product as Stripe.Product;
-            // Check if product is null and handle accordingly
-            if (!product) {
-                // This could be the shipping cost item, which has no product ID
-                return {
-                    productId: item.price?.id || 'shipping_cost',
-                    name: item.description,
-                    quantity: item.quantity,
-                    price: item.price?.unit_amount! / 100,
-                };
-            }
-            return {
-                productId: product.id, 
-                name: product.name,
-                images: product.images,
-                quantity: item.quantity,
-                price: item.price?.unit_amount! / 100,
-            }
-        }).filter(p => p.productId !== 'shipping_cost') // Filter out shipping cost item
-      };
-
-      // Save order to Firestore
-      const orderRef = await db.collection('orders').add(orderData);
-      
-      // Update product stock
-      const batch = db.batch();
-      for (const item of orderData.products) {
-          // Stripe product IDs might not match Firestore product IDs if you're not syncing them.
-          // This assumes the Stripe Product was created with a specific metadata field or the name is unique enough.
-          // For now, we will assume we need to query by name to find the correct product in Firestore to update stock.
-          if (item.name) {
-            const productsRef = db.collection('store_products');
-            const q = productsRef.where('name', '==', item.name).limit(1);
-            const productSnapshot = await q.get();
-
-            if (!productSnapshot.empty) {
-                const productDoc = productSnapshot.docs[0];
-                const productData = productDoc.data();
-                if (productData.stock !== undefined && productData.stock !== null) {
-                    batch.update(productDoc.ref, {
-                        stock: admin.firestore.FieldValue.increment(-(item.quantity || 0))
-                    });
-                }
-            }
-          }
-      }
-      await batch.commit();
-
-
-    } catch (error) {
-        console.error('Error handling checkout session:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    } catch (error: any) {
+        console.error('Error processing webhook:', error);
+        return NextResponse.json({ error: 'Internal Server Error while processing webhook.' }, { status: 500 });
     }
+  }
+
+  // Lógica para quando um pedido da loja é finalizado
+  if (event.type === 'checkout.session.completed' && event.data.object.metadata?.source === 'loja_delvind') {
+     const session = event.data.object as Stripe.Checkout.Session;
+     try {
+         // Código para criar o pedido na coleção 'orders'
+     } catch (error) {
+         //...
+     }
   }
 
   return NextResponse.json({ received: true });
