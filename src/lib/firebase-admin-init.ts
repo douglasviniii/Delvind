@@ -31,7 +31,4 @@ export function initializeAdminApp() {
   }
 }
 
-// Para manter compatibilidade
-export function getAdminApp() {
-    return { db: admin.firestore(initializeAdminApp()) };
-}
+    

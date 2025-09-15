@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db, storage } from '@/lib/firebase';
@@ -12,11 +13,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Edit, Trash2, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import TiptapEditor from '@/components/ui/tiptap-editor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -87,7 +87,7 @@ export function ManageProducts() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray<ProductFormData>({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "imageUrls",
   });
@@ -117,13 +117,20 @@ export function ManageProducts() {
       const file = event.target.files[0];
       setIsUploading(true);
       try {
-        const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        const storagePath = `products/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, storagePath);
+        
+        // Fazer upload do arquivo
+        await uploadBytes(storageRef, file);
+        
+        // Obter a URL pública de download
+        const downloadURL = await getDownloadURL(storageRef);
+        
         append({ url: downloadURL });
         toast({ title: 'Sucesso', description: 'Imagem adicionada.' });
-      } catch {
-        toast({ title: 'Erro de Upload', variant: 'destructive' });
+      } catch(error: any) {
+        console.error("Upload Error:", error);
+        toast({ title: 'Erro de Upload', description: `Não foi possível carregar a imagem. Verifique as permissões do Firebase Storage. Erro: ${error.code}`, variant: 'destructive' });
       } finally {
         setIsUploading(false);
       }
@@ -144,7 +151,7 @@ export function ManageProducts() {
         hasStock: !!fullData.stock,
         requiresShipping: !!fullData.requiresShipping,
         freeShipping: !!fullData.freeShipping,
-        imageUrls: fullData.imageUrls.map((url: string) => ({ url })),
+        imageUrls: Array.isArray(fullData.imageUrls) ? fullData.imageUrls.map((url: string) => ({ url })) : [],
       };
       setEditingProduct(dataToEdit);
       form.reset(dataToEdit);
@@ -260,7 +267,7 @@ export function ManageProducts() {
                      )}
                    </div>
                   <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Descrição Completa</FormLabel><FormControl><TiptapEditor value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Descrição Completa</FormLabel><FormControl><TiptapEditor value={field.value || ''} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
                   )} />
                   <div className="space-y-2">
                     <FormLabel>Imagens do Produto</FormLabel>
@@ -306,7 +313,15 @@ export function ManageProducts() {
             <TableBody>
               {products.map(product => (
                 <TableRow key={product.id}>
-                  <TableCell><Image src={product.imageUrls[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover" /></TableCell>
+                  <TableCell>
+                    {product.imageUrls && product.imageUrls.length > 0 ? (
+                        <Image src={product.imageUrls[0]} alt={product.name} width={64} height={64} className="rounded-md object-cover" />
+                    ) : (
+                        <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
+                            <ImageIcon className='w-8 h-8 text-muted-foreground'/>
+                        </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.promoPrice ? <div className='flex flex-col'><span className='line-through text-muted-foreground text-xs'>{formatCurrency(product.price)}</span><span>{formatCurrency(product.promoPrice)}</span></div> : formatCurrency(product.price)}</TableCell>
                   <TableCell>{product.stock ?? 'N/A'}</TableCell>
@@ -331,3 +346,5 @@ export function ManageProducts() {
     </Card>
   );
 }
+
+    
