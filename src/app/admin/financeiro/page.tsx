@@ -69,6 +69,7 @@ type ApprovedRefund = {
 }
 
 const configChargeSchema = z.object({
+    gateway: z.enum(['manual', 'stripe']).default('manual'),
     paymentType: z.enum(['full', 'installments', 'recurring'], {
         required_error: "Você deve selecionar um tipo de pagamento."
     }),
@@ -160,6 +161,7 @@ export default function FinanceiroPage() {
   const configForm = useForm<z.infer<typeof configChargeSchema>>({
     resolver: zodResolver(configChargeSchema),
     defaultValues: {
+      gateway: 'manual',
       paymentType: 'full',
       billingDate: new Date(),
       dueDate: new Date(),
@@ -237,6 +239,7 @@ export default function FinanceiroPage() {
   const handleOpenConfigModal = (record: FinancialRecord) => {
     setSelectedRecord(record);
     configForm.reset({ 
+      gateway: 'manual',
       paymentType: 'full',
       billingDate: new Date(),
       dueDate: new Date(),
@@ -374,6 +377,11 @@ export default function FinanceiroPage() {
   const handleConfigSubmit = async (values: z.infer<typeof configChargeSchema>) => {
     if (!selectedRecord) return;
     
+    if (values.gateway === 'stripe') {
+        toast({ title: "Em Breve!", description: "A integração com Stripe será implementada nas próximas atualizações."});
+        return;
+    }
+
     const batch = writeBatch(db);
     const originalRecordRef = doc(db, 'finance', selectedRecord.id);
 
@@ -704,6 +712,36 @@ export default function FinanceiroPage() {
             </DialogHeader>
             <Form {...configForm}>
                 <form id="config-charge-form" onSubmit={configForm.handleSubmit(handleConfigSubmit)} className="space-y-4 py-4">
+                    <FormField
+                      control={configForm.control}
+                      name="gateway"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <FormLabel>Gateway de Pagamento</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className="flex gap-4"
+                            >
+                              <FormItem className="flex items-center space-x-2">
+                                <FormControl>
+                                  <RadioGroupItem value="manual" />
+                                </FormControl>
+                                <FormLabel className="font-normal">Manual</FormLabel>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-2">
+                                <FormControl>
+                                  <RadioGroupItem value="stripe" />
+                                </FormControl>
+                                <FormLabel className="font-normal">Stripe</FormLabel>
+                              </FormItem>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField control={configForm.control} name="paymentType" render={({ field }) => (
                         <FormItem className="space-y-3"><FormLabel>Tipo de Pagamento</FormLabel>
                             <FormControl>
