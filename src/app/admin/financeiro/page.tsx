@@ -763,56 +763,6 @@ export default function FinanceiroPage() {
         </DialogContent>
     </Dialog>
 
-     <Dialog open={isGenerateChargeModalOpen} onOpenChange={setIsGenerateChargeModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-                <DialogTitle>Anexar Cobrança Manual</DialogTitle>
-                <DialogDescription>
-                    Gere o link de pagamento ou boleto no seu gateway e cole as informações abaixo.
-                </DialogDescription>
-            </DialogHeader>
-             <Form {...generateChargeForm}>
-                <form id="generate-charge-form" onSubmit={generateChargeForm.handleSubmit(handleGenerateChargeSubmit)} className="space-y-4 py-4">
-                     <FormField control={generateChargeForm.control} name="chargeType" render={({ field }) => (
-                        <FormItem className="space-y-3"><FormLabel>Tipo de Cobrança</FormLabel>
-                            <FormControl>
-                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
-                                    <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="link" /></FormControl><FormLabel className="font-normal">Link de Pagamento</FormLabel></FormItem>
-                                    <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="boleto" /></FormControl><FormLabel className="font-normal">Boleto</FormLabel></FormItem>
-                                </RadioGroup>
-                            </FormControl><FormMessage />
-                        </FormItem>
-                    )} />
-                    
-                    {generateChargeForm.watch('chargeType') === 'link' && (
-                         <FormField control={generateChargeForm.control} name="paymentLink" render={({ field }) => (
-                            <FormItem><FormLabel>Link de Checkout (Cartão/Pix)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                    )}
-                     {generateChargeForm.watch('chargeType') === 'boleto' && (
-                         <FormField control={generateChargeForm.control} name="boletoCode" render={({ field }) => (
-                            <FormItem><FormLabel>Código Copia e Cola do Boleto</FormLabel><FormControl><Textarea placeholder="00190..." {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
-                    )}
-                </form>
-             </Form>
-            <DialogFooter className="sm:justify-between">
-                <div>
-                     {(selectedRecord?.status === 'Cobrança Enviada' || selectedRecord?.status === 'Atrasado') && (
-                        <Button variant="secondary" onClick={() => { if(selectedRecord) handlePaymentAction(selectedRecord, 'confirm')}}>
-                            <CheckCircle className="mr-2 h-4 w-4" /> Marcar como Pago
-                        </Button>
-                    )}
-                </div>
-                <div className='flex gap-2'>
-                    <Button variant="ghost" onClick={() => setIsGenerateChargeModalOpen(false)}>Cancelar</Button>
-                    <Button type="submit" form="generate-charge-form">Anexar Cobrança</Button>
-                </div>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
-
-
     <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
         <DialogContent>
             <DialogHeader>
