@@ -29,12 +29,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { useToast } from '../../../hooks/use-toast';
 import { db } from '../../../lib/firebase';
-import { PlusCircle, MoreHorizontal, CalendarIcon, Trash2, Briefcase, ChevronLeft, ChevronRight, ListTodo } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, CalendarIcon, Trash2, Briefcase, ChevronLeft, ChevronRight, ListTodo, AlertTriangle } from 'lucide-react';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, orderBy, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../../../context/auth-context';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, addMonths, subMonths, isSameDay, startOfToday } from 'date-fns';
+import { format, addMonths, subMonths, isSameDay, startOfToday, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../../../components/ui/dropdown-menu';
@@ -135,11 +135,9 @@ export default function CollaboratorTasksPage() {
   }, [tasks, statusFilter]);
 
   const tasksByDay = useMemo(() => {
-    const today = startOfToday();
     return filteredTasks.reduce((acc, task) => {
         if (!task.dueDate?.toDate) return acc;
         const taskDate = task.dueDate.toDate();
-        if (taskDate < today && !isSameDay(taskDate, today)) return acc;
         const dateStr = format(taskDate, 'yyyy-MM-dd');
         if (!acc[dateStr]) { acc[dateStr] = []; }
         acc[dateStr].push(task);
@@ -245,12 +243,17 @@ export default function CollaboratorTasksPage() {
                         </div>
                     </CardHeader>
                     <CardContent className='space-y-6'>
-                        {groupedTasks.length > 0 ? groupedTasks.map(([date, tasks], index) => (
+                        {groupedTasks.length > 0 ? groupedTasks.map(([date, tasks], index) => {
+                             const isOverdue = isPast(new Date(date)) && !isSameDay(new Date(date), new Date());
+                            return (
                             <div key={date}>
-                                <h3 className="text-lg font-semibold mb-2 capitalize">{format(new Date(date.replace(/-/g, '/')), "EEEE, dd 'de' MMMM", { locale: ptBR })}</h3>
+                                <h3 className={cn("text-lg font-semibold mb-2 capitalize flex items-center gap-2", isOverdue && 'text-destructive')}>
+                                   {isOverdue && <AlertTriangle className="h-5 w-5"/>}
+                                   {format(new Date(date.replace(/-/g, '/')), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                                </h3>
                                 <div className='space-y-3'>
                                 {tasks.map(task => (
-                                     <Card key={task.id} className={cn("transition-all", task.isAppointment && 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800')}>
+                                     <Card key={task.id} className={cn("transition-all", task.isAppointment && 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800', isOverdue && !task.isAppointment && 'border-destructive/50')}>
                                         <CardHeader className='p-4 pb-2'>
                                             <CardTitle className='text-base flex items-center justify-between gap-2'>
                                             <div className='flex items-center gap-2'>
@@ -292,7 +295,7 @@ export default function CollaboratorTasksPage() {
                                 </div>
                                 {index < groupedTasks.length - 1 && <Separator className="mt-6" />}
                             </div>
-                        )) : <p className='text-sm text-center text-muted-foreground py-8'>Nenhuma tarefa ou reunião futura encontrada para este filtro.</p>}
+                        )}) : <p className='text-sm text-center text-muted-foreground py-8'>Nenhuma tarefa ou reunião encontrada para este filtro.</p>}
                     </CardContent>
                 </Card>
             </TabsContent>
