@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -607,7 +606,7 @@ export default function FinanceiroPage() {
                                         </Button>
                                     )}
                                     
-                                    {tabName === 'analyzing' && (
+                                    {tabName !== 'awaitingConfig' && (
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
