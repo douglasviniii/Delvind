@@ -7,7 +7,7 @@ import * as admin from 'firebase-admin';
 export async function POST(req: NextRequest) {
   try {
     // Chave secreta inserida diretamente para garantir o funcionamento
-    const stripeSecretKey = "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";
+    const stripeSecretKey = "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";
     if (!stripeSecretKey) {
       throw new Error('A chave secreta da Stripe não está definida.');
     }
