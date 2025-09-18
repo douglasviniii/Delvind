@@ -1,8 +1,7 @@
 
-      
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '../../../lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { Button } from '../../../components/ui/button';
@@ -79,7 +78,7 @@ export default function CustomerPaymentsPage() {
     const pendingQuery = query(
         collection(db, 'finance'), 
         where('clientId', '==', user.uid),
-        where('status', 'in', ['Cobrança Enviada', 'Atrasado']),
+        where('status', 'in', ['Cobrança Enviada', 'Atrasado', 'Pagamento Enviado']),
         orderBy('dueDate', 'asc')
     );
     
@@ -92,18 +91,19 @@ export default function CustomerPaymentsPage() {
     
     const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
         setPendingRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FinancialRecord)));
-        if(loading) setLoading(false);
+        setLoading(false);
     }, (error) => { setLoading(false); console.error("Error fetching pending records:", error) });
 
     const unsubscribePaid = onSnapshot(paidQuery, (snapshot) => {
       setPaidRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FinancialRecord)));
+       if (loading) setLoading(false);
     }, (error) => { console.error("Error fetching paid records:", error)});
 
     return () => {
         unsubscribePending();
         unsubscribePaid();
     }
-  }, [user, authLoading, loading]);
+  }, [user, authLoading]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -211,21 +211,55 @@ export default function CustomerPaymentsPage() {
     }
   }
 
+  const handleInformPayment = async (record: FinancialRecord) => {
+    const recordRef = doc(db, 'finance', record.id);
+    try {
+        await updateDoc(recordRef, {
+            status: 'Pagamento Enviado'
+        });
+        toast({
+            title: "Pagamento Informado!",
+            description: "A equipe da Delvind irá analisar seu pagamento e confirmar o recebimento em breve."
+        });
+    } catch(e) {
+        toast({title: "Erro", description: "Não foi possível informar o pagamento.", variant: "destructive"});
+    }
+  }
+
   const renderPaymentActions = (record: FinancialRecord) => {
     const isOverdue = record.status === 'Atrasado' || (record.gracePeriodEndDate && isPast(startOfDay(record.gracePeriodEndDate.toDate())));
   
     if (record.status === 'Cobrança Enviada' || isOverdue) {
       return (
         <div className="flex flex-col sm:flex-row items-stretch gap-2">
-          <Button size="sm" className="flex-1" onClick={() => handleStripeCheckout(record)} disabled={isProcessingStripe === record.id}>
-            {isProcessingStripe === record.id ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <CreditCard className='mr-2 h-4 w-4' />}
-            {isProcessingStripe === record.id ? 'Processando...' : 'Pagar Agora'}
-          </Button>
+           <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="flex-1">
+                        <Send className='mr-2 h-4 w-4'/>Informar Pagamento
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Informar Pagamento Realizado</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta ação notificará nossa equipe que você já efetuou o pagamento desta fatura. Usaremos isso para confirmar o recebimento. Deseja continuar?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleInformPayment(record)}>Sim, informar pagamento</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
           {record.boletoCode && (
             <Button variant="secondary" size="sm" className="flex-1" onClick={() => handleOpenBoletoModal(record.boletoCode!)}>
               <Barcode className='mr-2 h-4 w-4'/>Boleto
             </Button>
           )}
+           <Button size="sm" className="flex-1" onClick={() => handleStripeCheckout(record)} disabled={isProcessingStripe === record.id}>
+            {isProcessingStripe === record.id ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : <CreditCard className='mr-2 h-4 w-4' />}
+            {isProcessingStripe === record.id ? 'Processando...' : 'Pagar com Cartão'}
+          </Button>
         </div>
       );
     }
