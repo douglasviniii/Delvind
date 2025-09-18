@@ -8,15 +8,8 @@ const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-const formatDate = (timestamp: any) => {
-    if (timestamp && timestamp.toDate) {
-      return timestamp.toDate().toLocaleDateString('pt-BR');
-    }
-    return 'Data inválida';
-}
-
 export async function POST(req: Request) {
-  const stripeSecretKey = "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";
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   try {

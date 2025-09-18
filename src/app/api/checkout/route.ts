@@ -6,7 +6,7 @@ import * as admin from 'firebase-admin';
 
 export async function POST(req: NextRequest) {
   try {
-    const stripeSecretKey = "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";
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
       throw new Error('A variável de ambiente STRIPE_SECRET_KEY não está definida no servidor.');
     }
