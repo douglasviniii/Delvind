@@ -10,7 +10,7 @@ const formatCurrency = (value: number) => {
 
 export async function POST(req: Request) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = "whsec_VYEqGhhI55bQXez7O8jK9zxCFos0JJds";
 
   try {
     if (!stripeSecretKey) {
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     try {
       event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
     } catch (err: any) {
-      console.error(`⚠️  Webhook signature verification failed: ${err.message}`);
+      console.error(`⚠️  Webhook signature verification failed: ${'${err.message}'}`);
       return NextResponse.json({ error: 'Webhook signature verification failed.' }, { status: 400 });
     }
 
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
             const financeRecordSnap = await financeRecordRef.get();
 
             if (!financeRecordSnap.exists) {
-                console.error(`Registro financeiro com ID ${financeRecordId} não encontrado.`);
+                console.error(`Registro financeiro com ID ${'${financeRecordId}'} não encontrado.`);
                 return NextResponse.json({ error: 'Finance record not found.' }, { status: 404 });
             }
 
@@ -87,13 +87,13 @@ export async function POST(req: Request) {
                 const emailContent = `
                     <div style="font-family: Arial, sans-serif; line-height: 1.6;">
                         <h1 style="color: #6d28d9;">Recibo de Pagamento - Delvind</h1>
-                        <p>Olá, ${financeData.clientName},</p>
-                        <p>Confirmamos o recebimento do seu pagamento referente a <strong>${financeData.title}</strong>.</p>
+                        <p>Olá, ${'${financeData.clientName}'},</p>
+                        <p>Confirmamos o recebimento do seu pagamento referente a <strong>${'${financeData.title}'}</strong>.</p>
                         <hr>
                         <h3>Detalhes do Pagamento</h3>
-                        <p><strong>Valor Total Pago:</strong> ${formatCurrency(receiptData.totalAmount)}</p>
-                        <p><strong>Data do Pagamento:</strong> ${new Date().toLocaleDateString('pt-BR')}</p>
-                        <p><strong>ID do Recibo:</strong> ${receiptData.id.slice(0, 8).toUpperCase()}</p>
+                        <p><strong>Valor Total Pago:</strong> ${'${formatCurrency(receiptData.totalAmount)}'}</p>
+                        <p><strong>Data do Pagamento:</strong> ${'${new Date().toLocaleDateString(\'pt-BR\')}'}</p>
+                        <p><strong>ID do Recibo:</strong> ${'${receiptData.id.slice(0, 8).toUpperCase()}'}</p>
                         <hr>
                         <p>Seu recibo completo já está disponível no seu painel de cliente.</p>
                         <p>Agradecemos pela sua confiança!</p>
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
                 await db.collection('mail').add({
                         to: clientEmail,
                         message: {
-                            subject: `Seu Recibo de Pagamento - ${financeData.title}`,
+                            subject: `Seu Recibo de Pagamento - ${'${financeData.title}'}`,
                             html: emailContent,
                         },
                 });
@@ -155,7 +155,7 @@ export async function POST(req: Request) {
                     const userData = userDoc.data();
                     const existingServices = userData?.services || [];
                     const newService = {
-                        id: `sub_${subscriptionProduct.id}`,
+                        id: `sub_${'${subscriptionProduct.id}'}`,
                         name: subscriptionProduct.name,
                         active: true,
                         link: '',
