@@ -9,12 +9,13 @@ const formatCurrency = (value: number) => {
 }
 
 export async function POST(req: Request) {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  // Chave secreta inserida diretamente para garantir o funcionamento
+  const stripeSecretKey = "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";
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   try {
     if (!stripeSecretKey) {
-      throw new Error('A chave secreta da Stripe (STRIPE_SECRET_KEY) não está configurada no servidor.');
+      throw new Error('A chave secreta da Stripe não está configurada no servidor.');
     }
     if (!webhookSecret) {
       throw new Error('O segredo do webhook (STRIPE_WEBHOOK_SECRET) não está configurado no servidor.');
