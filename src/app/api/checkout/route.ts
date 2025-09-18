@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 
 export async function POST(req: NextRequest) {
   try {
-    const stripeSecretKey = "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";
+    const stripeSecretKey = "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";
     if (!stripeSecretKey) {
       throw new Error('A chave secreta da Stripe não está definida.');
     }
