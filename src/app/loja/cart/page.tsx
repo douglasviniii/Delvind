@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -120,7 +121,8 @@ export default function CartPage() {
         throw new Error(error);
       }
       
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+      const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+      const stripe = await stripePromise;
 
       if (sessionUrl) {
           window.location.href = sessionUrl;

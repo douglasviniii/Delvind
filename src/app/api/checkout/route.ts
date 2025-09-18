@@ -123,9 +123,12 @@ export async function POST(req: NextRequest) {
         success_url,
         cancel_url,
         metadata,
-        customer_email: customerEmail,
     };
     
+    if (customerEmail) {
+        sessionParams.customer_email = customerEmail;
+    }
+
     if (mode === 'subscription') {
       sessionParams.subscription_data = {
         trial_period_days: 0,

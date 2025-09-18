@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -69,11 +70,10 @@ export default function CustomerPaymentsPage() {
   }, []);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-        setLoading(false);
-        return;
-    };
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
+    }
     
     const pendingQuery = query(
         collection(db, 'finance'), 
@@ -159,17 +159,18 @@ export default function CustomerPaymentsPage() {
       const { sessionId, sessionUrl, error } = await response.json();
       if (error) throw new Error(error);
         
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+      const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+      const stripe = await stripePromise;
 
-      if (stripe && sessionId) {
+      if (sessionUrl) {
+         window.location.href = sessionUrl;
+      } else if (stripe && sessionId) {
         const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
         if (stripeError) {
           console.error("Stripe checkout error:", stripeError);
           if (sessionUrl) window.location.href = sessionUrl;
           else throw stripeError;
         }
-      } else if (sessionUrl) {
-         window.location.href = sessionUrl;
       } else {
         throw new Error("Não foi possível obter a sessão de checkout.");
       }
