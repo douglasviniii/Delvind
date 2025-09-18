@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -140,6 +139,10 @@ export default function CustomerPaymentsPage() {
           }
         }
       }
+      
+      const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+      const stripe = await stripePromise;
+      if (!stripe) throw new Error("Não foi possível carregar a plataforma de pagamento.");
 
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
@@ -159,12 +162,9 @@ export default function CustomerPaymentsPage() {
       const { sessionId, sessionUrl, error } = await response.json();
       if (error) throw new Error(error);
         
-      const stripePromise = loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
-      const stripe = await stripePromise;
-
       if (sessionUrl) {
          window.location.href = sessionUrl;
-      } else if (stripe && sessionId) {
+      } else if (sessionId) {
         const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
         if (stripeError) {
           console.error("Stripe checkout error:", stripeError);
