@@ -161,12 +161,11 @@ export default function CustomerPaymentsPage() {
       if (error) throw new Error(error);
 
       if (sessionId) {
-        const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+        const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
         if (stripe) {
             const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
             if (stripeError) {
                 console.error("Stripe checkout error:", stripeError);
-                // If redirectToCheckout fails, try the URL fallback
                 if (sessionUrl) window.location.href = sessionUrl;
                 else throw stripeError;
             }
@@ -174,7 +173,6 @@ export default function CustomerPaymentsPage() {
              throw new Error("Stripe.js falhou ao carregar.");
         }
       } else if (sessionUrl) {
-         // Fallback if no sessionId is returned but a URL is
          window.location.href = sessionUrl;
       } else {
         throw new Error("Não foi possível obter a sessão de checkout.");
