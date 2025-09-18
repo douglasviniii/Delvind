@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -70,9 +69,10 @@ export default function CustomerPaymentsPage() {
   }, []);
 
   useEffect(() => {
-    if (authLoading || !user) {
-      if (!authLoading) setLoading(false);
-      return;
+    if (authLoading) return;
+    if (!user) {
+        setLoading(false);
+        return;
     };
     
     const pendingQuery = query(
@@ -96,7 +96,6 @@ export default function CustomerPaymentsPage() {
 
     const unsubscribePaid = onSnapshot(paidQuery, (snapshot) => {
       setPaidRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FinancialRecord)));
-       if (loading) setLoading(false);
     }, (error) => { console.error("Error fetching paid records:", error)});
 
     return () => {
@@ -160,8 +159,7 @@ export default function CustomerPaymentsPage() {
       const { sessionId, sessionUrl, error } = await response.json();
       if (error) throw new Error(error);
         
-      const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-      const stripe = await stripePromise;
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
       if (stripe && sessionId) {
         const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
