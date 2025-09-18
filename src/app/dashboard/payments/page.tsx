@@ -160,7 +160,7 @@ export default function CustomerPaymentsPage() {
       const { sessionId, sessionUrl, error } = await response.json();
       if (error) throw new Error(error);
         
-      const stripePromise = loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
+      const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
       const stripe = await stripePromise;
 
       if (stripe && sessionId) {
@@ -371,5 +371,3 @@ export default function CustomerPaymentsPage() {
     </>
   );
 }
-
-    
