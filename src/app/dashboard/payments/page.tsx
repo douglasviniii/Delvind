@@ -161,7 +161,7 @@ export default function CustomerPaymentsPage() {
       if (error) throw new Error(error);
 
       if (sessionId) {
-        const stripe = await loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
+        const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
         if (stripe) {
             const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
             if (stripeError) {
