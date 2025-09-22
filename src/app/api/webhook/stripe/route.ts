@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         const adminApp = initializeAdminApp();
         const db = admin.firestore(adminApp);
         
-        // Handle successful payment
+        // Handle successful checkout session
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as Stripe.Checkout.Session;
             const metadata = session.metadata;
@@ -90,10 +90,11 @@ export async function POST(req: Request) {
             }
         }
         
-         if (event.type === 'invoice.payment_succeeded') {
+        // Handle successful recurring payment
+        if (event.type === 'invoice.payment_succeeded') {
             const invoice = event.data.object as Stripe.Invoice;
+            // Check if it's a recurring subscription payment
             if (invoice.billing_reason === 'subscription_cycle') {
-                // Handle recurring subscription payment
                 const customerEmail = invoice.customer_email;
                 if (customerEmail) {
                     const usersRef = db.collection('users');
@@ -114,7 +115,7 @@ export async function POST(req: Request) {
                             createdAt: admin.firestore.FieldValue.serverTimestamp(),
                             stripeInvoiceId: invoice.id,
                         });
-                        console.log(`갱️ Nova fatura de assinatura criada para o cliente ${userId}`);
+                        console.log(`🧾 Nova fatura de assinatura criada para o cliente ${userId}`);
                     }
                 }
             }
