@@ -9,8 +9,8 @@ const formatCurrency = (value: number) => {
 }
 
 export async function POST(req: Request) {
-  const stripeSecretKey = "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";
-  const webhookSecret = "whsec_VYEqGhhI55bQXez7O8jK9zxCFos0JJds";
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   try {
     if (!stripeSecretKey) {
