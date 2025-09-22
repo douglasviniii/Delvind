@@ -43,9 +43,6 @@ export async function POST(req: Request) {
         console.error(`❌ Erro na verificação do webhook: ${err.message}`);
         return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
     }
-    
-    const session = event.data.object as Stripe.Checkout.Session;
-    const metadata = session.metadata;
 
     try {
         const adminApp = initializeAdminApp();
@@ -53,6 +50,9 @@ export async function POST(req: Request) {
         
         // Handle successful payment
         if (event.type === 'checkout.session.completed') {
+            const session = event.data.object as Stripe.Checkout.Session;
+            const metadata = session.metadata;
+
             console.log('✅ Checkout session completed:', session.id);
 
             if (metadata?.source === 'loja_delvind') {
@@ -90,29 +90,32 @@ export async function POST(req: Request) {
             }
         }
         
-         if (event.type === 'invoice.payment_succeeded' && session.billing_reason === 'subscription_cycle') {
-            // Handle recurring subscription payment
-            const customerEmail = session.customer_details?.email;
-            if (customerEmail) {
-                const usersRef = db.collection('users');
-                const q = usersRef.where('email', '==', customerEmail).limit(1);
-                const userSnapshot = await q.get();
+         if (event.type === 'invoice.payment_succeeded') {
+            const invoice = event.data.object as Stripe.Invoice;
+            if (invoice.billing_reason === 'subscription_cycle') {
+                // Handle recurring subscription payment
+                const customerEmail = invoice.customer_email;
+                if (customerEmail) {
+                    const usersRef = db.collection('users');
+                    const q = usersRef.where('email', '==', customerEmail).limit(1);
+                    const userSnapshot = await q.get();
 
-                if (!userSnapshot.empty) {
-                    const userId = userSnapshot.docs[0].id;
-                    const newInvoiceRef = db.collection('finance').doc();
-                    await newInvoiceRef.set({
-                        id: newInvoiceRef.id,
-                        clientId: userId,
-                        clientName: session.customer_details?.name || 'Assinante',
-                        title: `Pagamento de Assinatura - ${new Date().toLocaleString('pt-BR')}`,
-                        totalAmount: session.amount_total ? session.amount_total / 100 : 0,
-                        status: 'Pagamento Enviado',
-                        entryType: 'subscription',
-                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                        stripeSessionId: session.id,
-                    });
-                     console.log(`갱️ Nova fatura de assinatura criada para o cliente ${userId}`);
+                    if (!userSnapshot.empty) {
+                        const userId = userSnapshot.docs[0].id;
+                        const newInvoiceRef = db.collection('finance').doc();
+                        await newInvoiceRef.set({
+                            id: newInvoiceRef.id,
+                            clientId: userId,
+                            clientName: invoice.customer_name || 'Assinante',
+                            title: `Pagamento de Assinatura - ${new Date().toLocaleString('pt-BR')}`,
+                            totalAmount: invoice.amount_paid ? invoice.amount_paid / 100 : 0,
+                            status: 'Pagamento Enviado',
+                            entryType: 'subscription',
+                            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                            stripeInvoiceId: invoice.id,
+                        });
+                        console.log(`갱️ Nova fatura de assinatura criada para o cliente ${userId}`);
+                    }
                 }
             }
         }
