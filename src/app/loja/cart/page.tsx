@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -13,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const ShippingCalculator = () => {
     const { setShippingInfo, cartRequiresShipping, subtotal } = useCart();
@@ -106,13 +109,10 @@ export default function CartPage() {
         return;
     }
     try {
-        const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-        if (!publishableKey) {
-            throw new Error("A chave pública do Stripe não está configurada.");
-        }
-        const stripePromise = loadStripe(publishableKey);
         const stripe = await stripePromise;
-        if (!stripe) throw new Error("Não foi possível carregar a plataforma de pagamento.");
+        if (!stripe) {
+             throw new Error("A chave pública do Stripe não está configurada.");
+        }
         
         const response = await fetch('/api/checkout', {
             method: 'POST',
@@ -244,3 +244,5 @@ export default function CartPage() {
     </div>
   );
 }
+
+    

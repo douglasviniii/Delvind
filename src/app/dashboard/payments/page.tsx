@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -49,8 +50,9 @@ type Budget = {
 
 let stripePromise: Promise<any>;
 const getStripe = () => {
-  if (!stripePromise && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-    stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+  const stripePublishableKey = "pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw";
+  if (!stripePromise && stripePublishableKey) {
+    stripePromise = loadStripe(stripePublishableKey);
   }
   return stripePromise;
 };
@@ -411,3 +413,5 @@ export default function CustomerPaymentsPage() {
     </>
   );
 }
+
+    
