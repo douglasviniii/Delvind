@@ -106,31 +106,35 @@ export default function CartPage() {
         return;
     }
     try {
-      const stripePromise = loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error("Não foi possível carregar a plataforma de pagamento.");
+        const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+        if (!publishableKey) {
+            throw new Error("A chave pública do Stripe não está configurada.");
+        }
+        const stripePromise = loadStripe(publishableKey);
+        const stripe = await stripePromise;
+        if (!stripe) throw new Error("Não foi possível carregar a plataforma de pagamento.");
         
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cartItems, shippingCost: (cartRequiresShipping && !allItemsHaveFreeShipping) ? (shippingInfo?.cost || 0) : 0 }),
-      });
+        const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cartItems, shippingCost: (cartRequiresShipping && !allItemsHaveFreeShipping) ? (shippingInfo?.cost || 0) : 0 }),
+        });
 
-      const { sessionId, sessionUrl, error } = await response.json();
+        const { sessionId, sessionUrl, error } = await response.json();
 
-      if (error) {
-        throw new Error(error);
-      }
-      
-      if (sessionUrl) {
-          window.location.href = sessionUrl;
-      } else if (sessionId) {
-          await stripe.redirectToCheckout({ sessionId });
-      } else {
-        throw new Error("Falha ao obter sessão do Stripe.");
-      }
+        if (error) {
+            throw new Error(error);
+        }
+        
+        if (sessionUrl) {
+            window.location.href = sessionUrl;
+        } else if (sessionId) {
+            await stripe.redirectToCheckout({ sessionId });
+        } else {
+            throw new Error("Falha ao obter sessão do Stripe.");
+        }
     } catch (error: any) {
       toast({
         title: 'Erro no Checkout',

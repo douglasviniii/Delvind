@@ -47,6 +47,14 @@ type Budget = {
     total: number;
 }
 
+let stripePromise: Promise<any>;
+const getStripe = () => {
+  if (!stripePromise && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+    stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+  }
+  return stripePromise;
+};
+
 
 export default function CustomerPaymentsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -140,8 +148,7 @@ export default function CustomerPaymentsPage() {
         }
       }
       
-      const stripePromise = loadStripe("pk_live_51S4NUSRsBJHXBafPe3XkqLLzQJXcM1KBRqGZpeIDymH6lR0z7jd0YS4f77AsyW2R2fJsGteSGx5oWb69LTuHnctI00S0qizwZw");
-      const stripe = await stripePromise;
+      const stripe = await getStripe();
       if (!stripe) throw new Error("Não foi possível carregar a plataforma de pagamento.");
 
       const userDocRef = doc(db, 'users', user.uid);
