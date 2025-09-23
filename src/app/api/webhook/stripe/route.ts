@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         const adminApp = initializeAdminApp();
         const db = admin.firestore(adminApp);
         
-        // Handle successful checkout session
+        // Handle successful one-time payments and initial subscription setup
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as Stripe.Checkout.Session;
             const metadata = session.metadata;
@@ -90,10 +90,10 @@ export async function POST(req: Request) {
             }
         }
         
-        // Handle successful recurring payment
+        // Handle recurring subscription payments (renewals)
         if (event.type === 'invoice.payment_succeeded') {
             const invoice = event.data.object as Stripe.Invoice;
-            // Check if it's a recurring subscription payment
+            // Check if it's a recurring subscription payment, not the setup payment from checkout
             if (invoice.billing_reason === 'subscription_cycle') {
                 const customerEmail = invoice.customer_email;
                 if (customerEmail) {
