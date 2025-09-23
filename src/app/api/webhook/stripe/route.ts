@@ -1,27 +1,12 @@
-
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { initializeAdminApp } from '@/lib/firebase-admin-init';
 import * as admin from 'firebase-admin';
-import fs from 'fs';
-import path from 'path';
-
-// Helper function to read secrets from Render's secret files or fallback to env vars
-const readSecret = (secretName: string): string | undefined => {
-  try {
-    // Render mounts secrets at /etc/secrets/<filename>
-    return fs.readFileSync(path.join('/etc/secrets', secretName), 'utf8').trim();
-  } catch (err) {
-    // For local development, fallback to process.env
-    // This also handles cases where the secret file might not exist in other environments
-    return process.env[secretName];
-  }
-};
 
 
 export async function POST(req: Request) {
-    const stripeSecretKey = readSecret('STRIPE_SECRET_KEY');
-    const stripeWebhookSecret = readSecret('STRIPE_WEBHOOK_SECRET');
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     
     if (!stripeSecretKey || !stripeWebhookSecret) {
         console.error('Stripe secret keys are not configured.');

@@ -1,23 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import fs from 'fs';
-import path from 'path';
-
-// Helper function to read secrets
-const readSecret = (secretName: string): string | undefined => {
-  try {
-    // Render mounts secrets at /etc/secrets/<filename>
-    return fs.readFileSync(path.join('/etc/secrets', secretName), 'utf8').trim();
-  } catch (err) {
-    // For local development, fallback to process.env
-    return process.env[secretName];
-  }
-};
-
 
 export async function POST(req: NextRequest) {
   try {
-    const stripeSecretKey = readSecret('STRIPE_SECRET_KEY');
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     
     if (!stripeSecretKey) {
       throw new Error('A chave secreta da Stripe não está definida.');
