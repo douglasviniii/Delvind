@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { initializeAdminApp } from '@/lib/firebase-admin-init';
